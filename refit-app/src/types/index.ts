@@ -156,14 +156,15 @@ export interface Certification {
 export interface Quote {
   id: string;
   projectId: string;
-  phaseId?: string;
+  phaseId?: string; // DEPRECATED: mantenuto per backward compatibility
+  phaseIds: string[]; // NEW: array di fasi per preventivi multi-fase
   contractorId: string;
   quoteNumber: string;
   status: 'draft' | 'sent' | 'received' | 'under_review' | 'approved' | 'rejected' | 'expired';
   requestDate: string;
   responseDate?: string;
   validUntil: string;
-  totalAmount: number;
+  totalAmount: number; // Calcolato automaticamente dalla somma delle fasi
   currency: string;
   items: QuoteItem[];
   terms: string;
@@ -183,6 +184,8 @@ export interface Quote {
     paymentMethod?: PaymentMethod;
     bankDetails?: string;
   };
+  // NEW: breakdown per fase
+  phaseBreakdown?: QuotePhaseBreakdown[];
 }
 
 export interface QuoteItem {
@@ -193,6 +196,16 @@ export interface QuoteItem {
   totalPrice: number;
   unit: string; // 'pz', 'mq', 'h', etc.
   category: string;
+  phaseId?: string; // NEW: collegamento opzionale alla fase specifica
+}
+
+// NEW: Breakdown del preventivo per fase
+export interface QuotePhaseBreakdown {
+  phaseId: string;
+  phaseName: string;
+  items: QuoteItem[];
+  subtotal: number;
+  notes?: string;
 }
 
 // Tipi per gestione pagamenti

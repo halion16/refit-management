@@ -153,13 +153,29 @@ export default function Quotes() {
 
     filteredQuotes.forEach(quote => {
       const project = getProject(quote.projectId);
-      const phase = project?.phases.find(p => p.id === quote.phaseId);
-      const key = `${project?.name || 'Progetto sconosciuto'}${phase ? ` - ${phase.name}` : ''}`;
 
-      if (!groups[key]) {
-        groups[key] = [];
+      // NEW: Gestione preventivi multi-fase
+      let groupKey = project?.name || 'Progetto sconosciuto';
+
+      if (quote.phaseIds && quote.phaseIds.length > 0) {
+        if (quote.phaseIds.length === 1) {
+          // Preventivo singola fase
+          const phase = project?.phases.find(p => p.id === quote.phaseIds[0]);
+          groupKey += phase ? ` - ${phase.name}` : '';
+        } else {
+          // Preventivo multi-fase
+          groupKey += ` - Multi-fase (${quote.phaseIds.length} fasi)`;
+        }
+      } else if (quote.phaseId) {
+        // DEPRECATED: Backward compatibility
+        const phase = project?.phases.find(p => p.id === quote.phaseId);
+        groupKey += phase ? ` - ${phase.name}` : '';
       }
-      groups[key].push(quote);
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(quote);
     });
 
     return groups;
@@ -332,6 +348,33 @@ export default function Quotes() {
                             </span>
                           )}
                         </div>
+
+                        {/* NEW: Fasi del preventivo */}
+                        {quote.phaseIds && quote.phaseIds.length > 0 && (
+                          <div className="mb-3">
+                            <div className="text-sm font-medium text-gray-700 mb-1">
+                              Fasi incluse ({quote.phaseIds.length})
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {quote.phaseIds.map(phaseId => {
+                                const phase = project?.phases.find(p => p.id === phaseId);
+                                return (
+                                  <span
+                                    key={phaseId}
+                                    className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800"
+                                  >
+                                    {phase?.name || 'Fase sconosciuta'}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                            {quote.phaseBreakdown && quote.phaseBreakdown.length > 0 && (
+                              <div className="mt-1 text-xs text-gray-500">
+                                Breakdown dettagliato disponibile nei dettagli
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div>

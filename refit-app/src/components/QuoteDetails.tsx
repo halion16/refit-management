@@ -219,12 +219,37 @@ export default function QuoteDetails({ quote, onClose, onEdit, onApprove, onReje
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <Building className="h-5 w-5 text-gray-400" />
-                    <div>
+                  <div className="flex items-start space-x-3">
+                    <Building className="h-5 w-5 text-gray-400 mt-0.5" />
+                    <div className="flex-1">
                       <div className="text-sm font-medium text-gray-700">Progetto</div>
                       <div className="text-gray-900">{project?.name || 'N/A'}</div>
-                      {phase && (
+
+                      {/* NEW: Mostra tutte le fasi del preventivo */}
+                      {quote.phaseIds && quote.phaseIds.length > 0 ? (
+                        <div className="mt-2">
+                          <div className="text-sm font-medium text-gray-600 mb-1">
+                            Fasi incluse ({quote.phaseIds.length})
+                          </div>
+                          <div className="space-y-1">
+                            {quote.phaseIds.map(phaseId => {
+                              const projectPhase = project?.phases.find(p => p.id === phaseId);
+                              return (
+                                <div key={phaseId} className="flex items-center gap-2">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                                    {projectPhase?.name || 'Fase sconosciuta'}
+                                  </span>
+                                  {projectPhase?.budget && (
+                                    <span className="text-xs text-gray-500">
+                                      Budget: €{projectPhase.budget.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : phase && (
                         <div className="text-sm text-gray-600">Fase: {phase.name}</div>
                       )}
                     </div>
@@ -267,11 +292,75 @@ export default function QuoteDetails({ quote, onClose, onEdit, onApprove, onReje
                 </div>
               </div>
 
+              {/* Breakdown per Fasi (se multi-fase) */}
+              {quote.phaseBreakdown && quote.phaseBreakdown.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                    <Building className="h-5 w-5 mr-2" />
+                    Breakdown per Fasi
+                  </h3>
+                  <div className="space-y-4">
+                    {quote.phaseBreakdown.map((phaseBreakdown, index) => (
+                      <div key={phaseBreakdown.phaseId} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
+                              Fase {index + 1}
+                            </span>
+                            {phaseBreakdown.phaseName}
+                          </h4>
+                          <div className="text-right">
+                            <div className="font-bold text-lg text-gray-900">
+                              €{phaseBreakdown.subtotal.toFixed(2)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {phaseBreakdown.items.length} voci
+                            </div>
+                          </div>
+                        </div>
+
+                        {phaseBreakdown.items.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Descrizione</th>
+                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Q.tà</th>
+                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Prezzo</th>
+                                  <th className="text-right py-2 text-xs font-medium text-gray-500">Totale</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {phaseBreakdown.items.map((item, itemIndex) => (
+                                  <tr key={itemIndex} className="border-b border-gray-100">
+                                    <td className="py-2">{item.description}</td>
+                                    <td className="py-2">{item.quantity} {item.unit}</td>
+                                    <td className="py-2">€{item.unitPrice.toFixed(2)}</td>
+                                    <td className="py-2 text-right font-medium">€{item.totalPrice.toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {phaseBreakdown.notes && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Note per questa fase:</div>
+                            <div className="text-sm text-gray-600">{phaseBreakdown.notes}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Voci di Preventivo */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                   <Package className="h-5 w-5 mr-2" />
-                  Voci di Preventivo
+                  {quote.phaseBreakdown && quote.phaseBreakdown.length > 0 ? 'Tutte le Voci' : 'Voci di Preventivo'}
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse border border-gray-200">

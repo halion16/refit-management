@@ -20,7 +20,8 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
 
   const [formData, setFormData] = useState({
     projectId: projectId || quote?.projectId || '',
-    phaseId: phaseId || quote?.phaseId || '',
+    phaseId: phaseId || quote?.phaseId || '', // DEPRECATED: manteniamo per backward compatibility
+    phaseIds: quote?.phaseIds || (phaseId ? [phaseId] : []), // NEW: array di fasi
     contractorId: quote?.contractorId || '',
     quoteNumber: quote?.quoteNumber || '',
     status: quote?.status || 'draft' as const,
@@ -87,11 +88,35 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
       return;
     }
 
+    // Crea phaseBreakdown automatico se ci sono più fasi selezionate
+    const phaseBreakdown = formData.phaseIds.length > 1 ?
+      formData.phaseIds.map(phaseId => {
+        const phase = phases.find(p => p.id === phaseId);
+        return {
+          phaseId,
+          phaseName: phase?.name || 'Fase sconosciuta',
+          items: items.filter(item => item.phaseId === phaseId),
+          subtotal: items.filter(item => item.phaseId === phaseId).reduce((sum, item) => sum + item.totalPrice, 0)
+        };
+      }) : undefined;
+
     const quoteData: Omit<Quote, 'id'> = {
       ...formData,
+      // Assicura che phaseIds sia sempre popolato
+      phaseIds: formData.phaseIds,
+      // Mantieni phaseId per backward compatibility
+      phaseId: formData.phaseIds[0] || '',
       items,
       documents,
-      approval: quote?.approval || {}
+      phaseBreakdown,
+      approval: quote?.approval || {},
+      // Inizializza campi per pagamenti se non presenti
+      paymentTerms: quote?.paymentTerms || [],
+      payments: quote?.payments || [],
+      paymentConfig: quote?.paymentConfig || {
+        vatRate: 22,
+        paymentMethod: 'bank_transfer'
+      }
     };
 
     onSave(quoteData);
@@ -131,22 +156,80 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fase (opzionale)
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fasi del Progetto
               </label>
-              <select
-                value={formData.phaseId}
-                onChange={(e) => setFormData({ ...formData, phaseId: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                disabled={!formData.projectId}
-              >
-                <option value="">Tutto il progetto</option>
-                {phases.map(phase => (
-                  <option key={phase.id} value={phase.id}>
-                    {phase.name}
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
+                {!formData.projectId ? (
+                  <p className="text-sm text-gray-500">Seleziona prima un progetto</p>
+                ) : phases.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nessuna fase disponibile</p>
+                ) : (
+                  <>
+                    <label className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={formData.phaseIds.length === phases.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            // Seleziona tutte le fasi
+                            setFormData({
+                              ...formData,
+                              phaseIds: phases.map(p => p.id),
+                              phaseId: phases[0]?.id || '' // backward compatibility
+                            });
+                          } else {
+                            // Deseleziona tutte
+                            setFormData({
+                              ...formData,
+                              phaseIds: [],
+                              phaseId: ''
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="font-medium">Tutte le fasi</span>
+                    </label>
+                    <hr className="border-gray-200" />
+                    {phases.map(phase => (
+                      <label key={phase.id} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={formData.phaseIds.includes(phase.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const newPhaseIds = [...formData.phaseIds, phase.id];
+                              setFormData({
+                                ...formData,
+                                phaseIds: newPhaseIds,
+                                phaseId: newPhaseIds[0] // backward compatibility
+                              });
+                            } else {
+                              const newPhaseIds = formData.phaseIds.filter(id => id !== phase.id);
+                              setFormData({
+                                ...formData,
+                                phaseIds: newPhaseIds,
+                                phaseId: newPhaseIds[0] || ''
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>{phase.name}</span>
+                        <span className="text-xs text-gray-500">
+                          (€{phase.budget?.toLocaleString() || 'N/A'})
+                        </span>
+                      </label>
+                    ))}
+                  </>
+                )}
+              </div>
+              {formData.phaseIds.length > 0 && (
+                <p className="text-xs text-gray-600 mt-1">
+                  {formData.phaseIds.length} fase{formData.phaseIds.length !== 1 ? 'i' : ''} selezionat{formData.phaseIds.length !== 1 ? 'e' : 'a'}
+                </p>
+              )}
             </div>
 
             <div>
