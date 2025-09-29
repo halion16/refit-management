@@ -7,6 +7,7 @@ import { Locations } from '@/components/Locations';
 import { Projects } from '@/components/Projects';
 import { Contractors } from '@/components/Contractors';
 import Quotes from '@/components/Quotes';
+import { Calendar } from '@/components/Calendar';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -45,6 +46,8 @@ export default function Home() {
         return <Contractors />;
       case 'quotes':
         return <Quotes />;
+      case 'calendar':
+        return <Calendar />;
       case 'settings':
         return (
           <div>

@@ -14,7 +14,10 @@ import {
   Eye,
   Clock,
   Tag,
-  Users
+  Users,
+  X,
+  Grid3X3,
+  List
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useLocations } from '@/hooks/useLocalStorage';
@@ -428,6 +431,298 @@ function LocationForm({
   );
 }
 
+function LocationDetails({ location, onClose }: {
+  location: Location;
+  onClose: () => void;
+}) {
+  const getStatusColor = (status: Location['status']) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'under_renovation': return 'bg-orange-100 text-orange-800';
+      case 'planned': return 'bg-blue-100 text-blue-800';
+      case 'closed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: Location['status']) => {
+    switch (status) {
+      case 'active': return 'Attivo';
+      case 'inactive': return 'Inattivo';
+      case 'under_renovation': return 'In ristrutturazione';
+      case 'planned': return 'Pianificato';
+      case 'closed': return 'Chiuso';
+      default: return status;
+    }
+  };
+
+  const getTypeLabel = (type: Location['type']) => {
+    switch (type) {
+      case 'store': return 'Negozio';
+      case 'office': return 'Ufficio';
+      case 'warehouse': return 'Magazzino';
+      case 'factory': return 'Fabbrica';
+      case 'construction_site': return 'Cantiere';
+      case 'hotel': return 'Hotel';
+      case 'restaurant': return 'Ristorante';
+      case 'other': return 'Altro';
+      default: return type;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">{location.name}</h2>
+            <p className="text-sm text-gray-600">{location.code}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-md"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Tipo</h3>
+              <p className="text-lg font-semibold text-gray-900">
+                {getTypeLabel(location.type)}
+                {location.subtype && <span className="text-sm text-gray-600 ml-2">({location.subtype})</span>}
+              </p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Stato</h3>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(location.status)}`}>
+                {getStatusLabel(location.status)}
+              </span>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Superficie</h3>
+              <p className="text-lg font-semibold text-gray-900">{location.surface} mq</p>
+              {location.floors && location.floors > 1 && (
+                <p className="text-sm text-gray-600">{location.floors} piani</p>
+              )}
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Indirizzo
+            </h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-gray-900">{location.address.street}</p>
+              <p className="text-gray-900">
+                {location.address.cap} {location.address.city}, {location.address.province}
+              </p>
+              <p className="text-gray-600">{location.address.country}</p>
+            </div>
+          </div>
+
+          {/* Manager & Contacts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Manager
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="font-medium text-gray-900">{location.manager}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Phone className="h-5 w-5 mr-2" />
+                Contatti
+              </h3>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                {location.contacts.phone && (
+                  <div className="flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{location.contacts.phone}</span>
+                  </div>
+                )}
+                {location.contacts.mobile && (
+                  <div className="flex items-center">
+                    <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{location.contacts.mobile}</span>
+                  </div>
+                )}
+                {location.contacts.email && (
+                  <div className="flex items-center">
+                    <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                    <span>{location.contacts.email}</span>
+                  </div>
+                )}
+                {!location.contacts.phone && !location.contacts.mobile && !location.contacts.email && (
+                  <p className="text-gray-500 text-sm">Nessun contatto disponibile</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {location.description && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Descrizione</h3>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-700 whitespace-pre-wrap">{location.description}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Tags */}
+          {location.tags.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Tag className="h-5 w-5 mr-2" />
+                Tags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {location.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                  >
+                    <Tag className="h-3 w-3 mr-1" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Metadata */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">Data creazione</h4>
+              <p className="text-sm text-gray-900">{formatDate(location.createdAt)}</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">Ultimo aggiornamento</h4>
+              <p className="text-sm text-gray-900">{formatDate(location.updatedAt)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end">
+          <Button onClick={onClose}>
+            Chiudi
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LocationRow({ location, onEdit, onDelete, onView }: {
+  location: Location;
+  onEdit: (location: Location) => void;
+  onDelete: (id: string) => void;
+  onView: (location: Location) => void;
+}) {
+  const getStatusColor = (status: Location['status']) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'under_renovation': return 'bg-orange-100 text-orange-800';
+      case 'planned': return 'bg-blue-100 text-blue-800';
+      case 'closed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusLabel = (status: Location['status']) => {
+    switch (status) {
+      case 'active': return 'Attivo';
+      case 'inactive': return 'Inattivo';
+      case 'under_renovation': return 'In ristrutturazione';
+      case 'planned': return 'Pianificato';
+      case 'closed': return 'Chiuso';
+      default: return status;
+    }
+  };
+
+  const getTypeLabel = (type: Location['type']) => {
+    switch (type) {
+      case 'store': return 'Negozio';
+      case 'office': return 'Ufficio';
+      case 'warehouse': return 'Magazzino';
+      case 'factory': return 'Fabbrica';
+      case 'construction_site': return 'Cantiere';
+      case 'hotel': return 'Hotel';
+      case 'restaurant': return 'Ristorante';
+      case 'other': return 'Altro';
+      default: return type;
+    }
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 hover:shadow-sm transition-shadow">
+      <div className="px-6 py-4 grid grid-cols-12 gap-4 items-center">
+        {/* Nome e Codice */}
+        <div className="col-span-3">
+          <h3 className="font-semibold text-gray-900">{location.name}</h3>
+          <p className="text-sm text-gray-600">{location.code}</p>
+        </div>
+
+        {/* Tipo */}
+        <div className="col-span-2">
+          <div className="flex items-center text-sm text-gray-600">
+            <Building2 className="h-4 w-4 mr-2" />
+            {getTypeLabel(location.type)}
+          </div>
+        </div>
+
+        {/* Ubicazione */}
+        <div className="col-span-2">
+          <div className="flex items-center text-sm text-gray-600">
+            <MapPin className="h-4 w-4 mr-2" />
+            {location.address.city}
+          </div>
+        </div>
+
+        {/* Manager */}
+        <div className="col-span-2">
+          <div className="flex items-center text-sm text-gray-600">
+            <Users className="h-4 w-4 mr-2" />
+            {location.manager}
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="col-span-2">
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(location.status)}`}>
+            {getStatusLabel(location.status)}
+          </span>
+        </div>
+
+        {/* Azioni */}
+        <div className="col-span-1 flex justify-end space-x-1">
+          <Button variant="ghost" size="sm" onClick={() => onView(location)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onEdit(location)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(location.id)}>
+            <Trash2 className="h-4 w-4 text-red-600" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LocationCard({ location, onEdit, onDelete, onView }: {
   location: Location;
   onEdit: (location: Location) => void;
@@ -545,6 +840,7 @@ export function Locations() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const handleSave = (formData: LocationFormData) => {
     const locationData = {
@@ -575,9 +871,10 @@ export function Locations() {
     }
   };
 
+  const [viewingLocation, setViewingLocation] = useState<Location | undefined>();
+
   const handleView = (location: Location) => {
-    // TODO: Implementare vista dettagliata
-    alert(`Visualizzazione dettagli per: ${location.name}`);
+    setViewingLocation(location);
   };
 
   const filteredLocations = locations.filter(location => {
@@ -607,10 +904,31 @@ export function Locations() {
           <h1 className="text-2xl font-bold text-gray-900">Locations</h1>
           <p className="text-gray-600">Gestisci tutte le locations dei tuoi progetti</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuova Location
-        </Button>
+        <div className="flex items-center space-x-2">
+          {/* View Toggle */}
+          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="rounded-none"
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="rounded-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuova Location
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -725,17 +1043,45 @@ export function Locations() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLocations.map((location) => (
-            <LocationCard
-              key={location.id}
-              location={location}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-            />
-          ))}
-        </div>
+        viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLocations.map((location) => (
+              <LocationCard
+                key={location.id}
+                location={location}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleView}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Header della tabella */}
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-900">
+                <div className="col-span-3">Nome / Codice</div>
+                <div className="col-span-2">Tipo</div>
+                <div className="col-span-2">Ubicazione</div>
+                <div className="col-span-2">Manager</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-1 text-right">Azioni</div>
+              </div>
+            </div>
+            {/* Righe */}
+            <div className="divide-y divide-gray-200">
+              {filteredLocations.map((location) => (
+                <LocationRow
+                  key={location.id}
+                  location={location}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onView={handleView}
+                />
+              ))}
+            </div>
+          </div>
+        )
       )}
 
       {/* Form Modal */}
@@ -747,6 +1093,14 @@ export function Locations() {
             setShowForm(false);
             setEditingLocation(undefined);
           }}
+        />
+      )}
+
+      {/* Details Modal */}
+      {viewingLocation && (
+        <LocationDetails
+          location={viewingLocation}
+          onClose={() => setViewingLocation(undefined)}
         />
       )}
 

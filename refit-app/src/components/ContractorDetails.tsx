@@ -273,7 +273,7 @@ export function ContractorDetails({ contractor, onClose, onEdit, onUpdateContrac
                 </span>
                 <span className="flex items-center">
                   <MapPin className="h-4 w-4 mr-1" />
-                  {contractor.contact.city}
+                  {contractor.address.city}
                 </span>
               </div>
             </div>
@@ -329,32 +329,32 @@ export function ContractorDetails({ contractor, onClose, onEdit, onUpdateContrac
                     <div className="flex items-center text-gray-600">
                       <MapPin className="h-4 w-4 mr-3" />
                       <div>
-                        <p className="font-medium">{contractor.contact.address}</p>
-                        <p>{contractor.contact.zipCode} {contractor.contact.city}</p>
+                        <p className="font-medium">{contractor.address.street}</p>
+                        <p>{contractor.address.cap} {contractor.address.city}</p>
                       </div>
                     </div>
-                    {contractor.contact.phone && (
+                    {contractor.contacts.phone && (
                       <div className="flex items-center text-gray-600">
                         <Phone className="h-4 w-4 mr-3" />
-                        <span>{contractor.contact.phone}</span>
+                        <span>{contractor.contacts.phone}</span>
                       </div>
                     )}
-                    {contractor.contact.email && (
+                    {contractor.contacts.email && (
                       <div className="flex items-center text-gray-600">
                         <Mail className="h-4 w-4 mr-3" />
-                        <span>{contractor.contact.email}</span>
+                        <span>{contractor.contacts.email}</span>
                       </div>
                     )}
-                    {contractor.contact.website && (
+                    {contractor.contacts.website && (
                       <div className="flex items-center text-gray-600">
                         <Globe className="h-4 w-4 mr-3" />
                         <a
-                          href={contractor.contact.website}
+                          href={contractor.contacts.website}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800"
                         >
-                          {contractor.contact.website}
+                          {contractor.contacts.website}
                         </a>
                       </div>
                     )}
@@ -366,18 +366,18 @@ export function ContractorDetails({ contractor, onClose, onEdit, onUpdateContrac
                   <div className="space-y-3">
                     <div className="flex items-center text-gray-600">
                       <Users className="h-4 w-4 mr-3" />
-                      <span className="font-medium">{contractor.contact.referentName}</span>
+                      <span className="font-medium">{contractor.contacts.referentName}</span>
                     </div>
-                    {contractor.contact.referentPhone && (
+                    {contractor.contacts.referentPhone && (
                       <div className="flex items-center text-gray-600">
                         <Phone className="h-4 w-4 mr-3" />
-                        <span>{contractor.contact.referentPhone}</span>
+                        <span>{contractor.contacts.referentPhone}</span>
                       </div>
                     )}
-                    {contractor.contact.referentEmail && (
+                    {contractor.contacts.referentEmail && (
                       <div className="flex items-center text-gray-600">
                         <Mail className="h-4 w-4 mr-3" />
-                        <span>{contractor.contact.referentEmail}</span>
+                        <span>{contractor.contacts.referentEmail}</span>
                       </div>
                     )}
                   </div>

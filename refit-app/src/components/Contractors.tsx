@@ -74,10 +74,10 @@ function ContractorForm({
 }) {
   const [formData, setFormData] = useState<ContractorFormData>(
     contractor ? {
-      name: contractor.name,
+      name: contractor.companyName,
       type: contractor.type,
       vatNumber: contractor.vatNumber,
-      contact: contractor.contact,
+      contact: contractor.contacts,
       specializations: contractor.specializations,
       status: contractor.status
     } : initialFormData
@@ -440,7 +440,7 @@ function ContractorCard({
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{contractor.name}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">{contractor.companyName}</h3>
           <p className="text-sm text-gray-600">P.IVA: {contractor.vatNumber}</p>
         </div>
         <div className="flex space-x-2 ml-4">
@@ -462,25 +462,25 @@ function ContractorCard({
       <div className="space-y-3 mb-4">
         <div className="flex items-center text-sm text-gray-600">
           <MapPin className="h-4 w-4 mr-2" />
-          {contractor.contact.city}
+          {contractor.address.city}
         </div>
 
         <div className="flex items-center text-sm text-gray-600">
           <Users className="h-4 w-4 mr-2" />
-          {contractor.contact.referentName}
+          {contractor.contacts.referentName}
         </div>
 
-        {contractor.contact.phone && (
+        {contractor.contacts.phone && (
           <div className="flex items-center text-sm text-gray-600">
             <Phone className="h-4 w-4 mr-2" />
-            {contractor.contact.phone}
+            {contractor.contacts.phone}
           </div>
         )}
 
-        {contractor.contact.email && (
+        {contractor.contacts.email && (
           <div className="flex items-center text-sm text-gray-600">
             <Mail className="h-4 w-4 mr-2" />
-            {contractor.contact.email}
+            {contractor.contacts.email}
           </div>
         )}
       </div>
@@ -607,9 +607,9 @@ export function Contractors() {
   };
 
   const filteredContractors = contractors.filter(contractor => {
-    const matchesSearch = contractor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = contractor.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          contractor.vatNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         contractor.contact.referentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         contractor.contacts.referentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          contractor.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesStatus = filterStatus === 'all' || contractor.status === filterStatus;
