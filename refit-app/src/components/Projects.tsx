@@ -851,6 +851,9 @@ export function Projects() {
             setShowForm(true);
           }}
           onUpdateProject={(updatedProject) => {
+            console.log('🏢 PROJECTS - Updating project in localStorage:', updatedProject);
+            console.log('🏢 PROJECTS - Project phases:', updatedProject.phases);
+            console.log('🏢 PROJECTS - Phase contractors:', updatedProject.phases.map(p => ({ name: p.name, contractors: p.assignedContractors })));
             updateItem(updatedProject.id, updatedProject);
             setViewingProject(updatedProject);
           }}

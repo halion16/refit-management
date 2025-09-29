@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatDate, formatCurrency, generateId } from '@/lib/utils';
+import { useContractors } from '@/hooks/useLocalStorage';
 import type { ProjectPhase, Task } from '@/types';
 
 interface PhaseFormData {
@@ -41,17 +42,20 @@ const initialPhaseFormData: PhaseFormData = {
   dependencies: []
 };
 
-function PhaseForm({
-  phase,
-  phases,
-  onSave,
-  onCancel
-}: {
+function PhaseForm(props: {
   phase?: ProjectPhase;
   phases: ProjectPhase[];
   onSave: (data: PhaseFormData) => void;
   onCancel: () => void;
 }) {
+  const { phase, phases, onSave, onCancel } = props;
+  const { data: contractors } = useContractors();
+
+  // Debug log
+  console.log('📋 PHASE FORM - Contractors loaded:', contractors.length);
+  console.log('📋 PHASE FORM - First contractor:', contractors[0]);
+  console.log('📋 PHASE FORM - Active contractors:', contractors.filter(c => c.status === 'active').length);
+
   const [formData, setFormData] = useState<PhaseFormData>(
     phase ? {
       name: phase.name,
@@ -64,7 +68,7 @@ function PhaseForm({
     } : initialPhaseFormData
   );
 
-  const [newContractor, setNewContractor] = useState('');
+  const [selectedContractor, setSelectedContractor] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,12 +76,25 @@ function PhaseForm({
   };
 
   const addContractor = () => {
-    if (newContractor.trim() && !formData.assignedContractors.includes(newContractor.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        assignedContractors: [...prev.assignedContractors, newContractor.trim()]
-      }));
-      setNewContractor('');
+    console.log('➕ ADDING CONTRACTOR:', selectedContractor);
+    console.log('➕ Current assigned:', formData.assignedContractors);
+    console.log('➕ Selected contractor value:', selectedContractor);
+    console.log('➕ Already included?', formData.assignedContractors.includes(selectedContractor));
+
+    if (selectedContractor && !formData.assignedContractors.includes(selectedContractor)) {
+      console.log('✅ Contractor added successfully');
+      const newFormData = {
+        ...formData,
+        assignedContractors: [...formData.assignedContractors, selectedContractor]
+      };
+      console.log('✅ New formData.assignedContractors:', newFormData.assignedContractors);
+      setFormData(newFormData);
+      setSelectedContractor('');
+    } else {
+      console.log('❌ Contractor not added - already exists or empty');
+      console.log('❌ selectedContractor:', selectedContractor);
+      console.log('❌ isEmpty:', !selectedContractor);
+      console.log('❌ alreadyExists:', formData.assignedContractors.includes(selectedContractor));
     }
   };
 
@@ -190,18 +207,33 @@ function PhaseForm({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Fornitori Assegnati</label>
             <div className="flex gap-2 mb-2">
-              <input
-                type="text"
+              <select
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Nome fornitore..."
-                value={newContractor}
-                onChange={(e) => setNewContractor(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addContractor())}
-              />
-              <Button type="button" onClick={addContractor}>
+                value={selectedContractor}
+                onChange={(e) => setSelectedContractor(e.target.value)}
+              >
+                <option value="">Seleziona fornitore...</option>
+                {contractors
+                  .filter(contractor => contractor.status === 'active' && !formData.assignedContractors.includes(contractor.name || contractor.companyName))
+                  .map(contractor => (
+                    <option key={contractor.id} value={contractor.name || contractor.companyName}>
+                      {contractor.name || contractor.companyName} - {contractor.specializations.slice(0, 2).join(', ')}
+                    </option>
+                  ))}
+              </select>
+              <Button type="button" onClick={addContractor} disabled={!selectedContractor}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            {contractors.length === 0 ? (
+              <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded mb-2">
+                ⚠️ Nessun fornitore disponibile. Crea prima i fornitori nella sezione dedicata.
+              </div>
+            ) : (
+              <div className="text-xs text-green-600 mb-1">
+                ✅ {contractors.filter(c => c.status === 'active').length} fornitori attivi disponibili
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {formData.assignedContractors.map((contractor) => (
                 <span
@@ -303,82 +335,121 @@ function PhaseCard({
   const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-start">
-          <div className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-600 rounded-full text-sm font-medium mr-3 flex-shrink-0">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start flex-1">
+          <div className="flex items-center justify-center w-7 h-7 bg-blue-100 text-blue-600 rounded-full text-sm font-medium mr-3 flex-shrink-0">
             {index + 1}
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-gray-900 mb-1">{phase.name}</h4>
-            {phase.description && (
-              <p className="text-sm text-gray-600 mb-3">{phase.description}</p>
-            )}
-
-            <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-              <div className="flex items-center text-gray-600">
-                <Calendar className="h-4 w-4 mr-2" />
-                <span>{formatDate(phase.startDate)} - {formatDate(phase.endDate)}</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Clock className="h-4 w-4 mr-2" />
-                <span>{duration} giorni</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Euro className="h-4 w-4 mr-2" />
-                <span>{formatCurrency(phase.budget)}</span>
-                {phase.actualCost && (
-                  <span className="ml-2 text-xs">
-                    (Speso: {formatCurrency(phase.actualCost)})
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center text-gray-600">
-                <Target className="h-4 w-4 mr-2" />
-                <span>
-                  {showProgressEdit ? (
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={tempProgress}
-                        onChange={(e) => setTempProgress(parseInt(e.target.value))}
-                        className="w-16 px-2 py-1 text-xs border border-gray-300 rounded"
-                      />
-                      <button
-                        onClick={handleProgressSubmit}
-                        className="text-green-600 hover:text-green-800 text-xs"
-                      >
-                        ✓
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowProgressEdit(false);
-                          setTempProgress(phase.progress);
-                        }}
-                        className="text-red-600 hover:text-red-800 text-xs"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowProgressEdit(true)}
-                      className="hover:text-blue-600"
-                    >
-                      {phase.progress}%
-                    </button>
-                  )}
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-900">{phase.name}</h4>
+              <div className="flex items-center space-x-2">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(phase.status)}`}>
+                  {getStatusIcon(phase.status)}
+                  <span className="ml-1">{getStatusLabel(phase.status)}</span>
                 </span>
+                {showProgressEdit ? (
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={tempProgress}
+                      onChange={(e) => setTempProgress(parseInt(e.target.value))}
+                      className="w-14 px-2 py-1 text-xs border border-gray-300 rounded"
+                    />
+                    <span className="text-xs text-gray-500">%</span>
+                    <button
+                      onClick={handleProgressSubmit}
+                      className="text-green-600 hover:text-green-800 text-xs"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowProgressEdit(false);
+                        setTempProgress(phase.progress);
+                      }}
+                      className="text-red-600 hover:text-red-800 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowProgressEdit(true)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {phase.progress}%
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="mb-3">
-              <div className="w-full bg-gray-200 rounded-full h-2">
+            {phase.description && (
+              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{phase.description}</p>
+            )}
+
+            <div className="grid grid-cols-3 gap-3 text-xs mb-2">
+              <div className="flex items-center text-gray-600">
+                <Calendar className="h-3 w-3 mr-1" />
+                <span className="truncate">{formatDate(phase.startDate)}</span>
+              </div>
+              <div className="flex items-center text-gray-600">
+                <Clock className="h-3 w-3 mr-1" />
+                <span>{duration}gg</span>
+              </div>
+              <div className="flex items-center text-gray-600">
+                <Euro className="h-3 w-3 mr-1" />
+                <span className="truncate">{formatCurrency(phase.budget)}</span>
+              </div>
+            </div>
+
+            {phase.assignedContractors.length > 0 && (
+              <div className="flex items-center text-xs text-gray-600 mb-2">
+                <Users className="h-3 w-3 mr-1" />
+                <div className="flex flex-wrap gap-1">
+                  {phase.assignedContractors.slice(0, 2).map((contractor, idx) => (
+                    <span key={idx} className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">
+                      {contractor}
+                    </span>
+                  ))}
+                  {phase.assignedContractors.length > 2 && (
+                    <span className="text-gray-500">+{phase.assignedContractors.length - 2}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {phase.actualCost && (
+              <div className="text-xs text-amber-600 mb-2">
+                <span className="flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Speso: {formatCurrency(phase.actualCost)}
+                  {phase.actualCost > phase.budget && (
+                    <span className="ml-1 text-red-600 font-medium">
+                      (Sforamento: {formatCurrency(phase.actualCost - phase.budget)})
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            {phase.dependencies && phase.dependencies.length > 0 && (
+              <div className="text-xs text-gray-500 mb-2">
+                <span className="flex items-center">
+                  <Target className="h-3 w-3 mr-1" />
+                  Dipendenze: {phase.dependencies.length}
+                </span>
+              </div>
+            )}
+
+            {/* Progress Bar - Compatta */}
+            <div className="mb-2">
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
                 <div
-                  className={`h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
                     phase.progress === 100 ? 'bg-green-500' :
                     phase.progress > 0 ? 'bg-blue-500' : 'bg-gray-300'
                   }`}
@@ -387,76 +458,44 @@ function PhaseCard({
               </div>
             </div>
 
-            {/* Dependencies */}
-            {phase.dependencies.length > 0 && (
-              <div className="mb-3">
-                <span className="text-xs text-gray-500">
-                  Dipende da: {phase.dependencies.length} fase/i
-                </span>
-              </div>
-            )}
-
-            {/* Assigned Contractors */}
-            {phase.assignedContractors.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {phase.assignedContractors.map((contractor) => (
-                  <span key={contractor} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
-                    <Users className="h-3 w-3 inline mr-1" />
-                    {contractor}
-                  </span>
+            {/* Quick Status Change */}
+            <div className="flex items-center justify-between">
+              <select
+                value={phase.status}
+                onChange={(e) => onUpdateStatus(phase.id, e.target.value as ProjectPhase['status'])}
+                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+              >
+                {statusOptions.map(status => (
+                  <option key={status} value={status}>
+                    {getStatusLabel(status)}
+                  </option>
                 ))}
+              </select>
+
+              <div className="text-xs text-gray-400">
+                Inizio: {new Date(phase.startDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
-          {/* Move buttons */}
-          <div className="flex flex-col">
-            <button
-              onClick={() => onMoveUp(phase.id)}
-              disabled={index === 0}
-              className={`p-1 text-gray-400 hover:text-gray-600 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-            >
+        <div className="flex flex-col space-y-1 ml-3">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(phase)} className="h-7 w-7 p-0">
+            <Edit className="h-3 w-3" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => onDelete(phase.id)} className="h-7 w-7 p-0">
+            <Trash2 className="h-3 w-3 text-red-600" />
+          </Button>
+          {index > 0 && (
+            <Button variant="ghost" size="sm" onClick={() => onMoveUp(phase.id)} className="h-7 w-7 p-0">
               <ArrowUp className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => onMoveDown(phase.id)}
-              disabled={index === totalPhases - 1}
-              className={`p-1 text-gray-400 hover:text-gray-600 ${index === totalPhases - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-            >
+            </Button>
+          )}
+          {index < totalPhases - 1 && (
+            <Button variant="ghost" size="sm" onClick={() => onMoveDown(phase.id)} className="h-7 w-7 p-0">
               <ArrowDown className="h-3 w-3" />
-            </button>
-          </div>
-
-          {/* Action buttons */}
-          <Button variant="ghost" size="sm" onClick={() => onEdit(phase)}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => onDelete(phase.id)}>
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Status and Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-        <div className="flex items-center space-x-2">
-          <select
-            value={phase.status}
-            onChange={(e) => onUpdateStatus(phase.id, e.target.value as ProjectPhase['status'])}
-            className={`text-sm px-3 py-1 rounded-full border-0 font-medium cursor-pointer ${getStatusColor(phase.status)}`}
-          >
-            {statusOptions.map(status => (
-              <option key={status} value={status}>
-                {getStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="text-xs text-gray-500">
-          Fase {index + 1} di {totalPhases}
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -474,6 +513,8 @@ export function ProjectPhases({
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | undefined>();
 
   const handleSave = (formData: PhaseFormData) => {
+    console.log('🔄 SAVING PHASE - FormData:', formData);
+    console.log('🔄 FormData assignedContractors:', formData.assignedContractors);
     if (editingPhase) {
       // Update existing phase
       const updatedPhases = phases.map(phase =>
@@ -638,8 +679,8 @@ export function ProjectPhases({
             </div>
           </div>
 
-          {/* Phases List */}
-          <div className="space-y-4">
+          {/* Phases List with Vertical Scrolling */}
+          <div className="max-h-96 overflow-y-auto pr-2 space-y-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {phases.map((phase, index) => (
               <PhaseCard
                 key={phase.id}

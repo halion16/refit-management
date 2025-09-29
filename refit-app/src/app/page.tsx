@@ -5,6 +5,7 @@ import { Layout } from '@/components/Layout';
 import { Dashboard } from '@/components/Dashboard';
 import { Locations } from '@/components/Locations';
 import { Projects } from '@/components/Projects';
+import { Contractors } from '@/components/Contractors';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
 
@@ -47,14 +48,7 @@ export default function Home() {
       case 'projects':
         return <Projects />;
       case 'contractors':
-        return (
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Fornitori</h1>
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <p className="text-gray-600">Gestione fornitori in sviluppo...</p>
-            </div>
-          </div>
-        );
+        return <Contractors />;
       case 'quotes':
         return (
           <div>

@@ -38,7 +38,7 @@ export function Header() {
 
         <div className="hidden lg:block">
           <h1 className="text-xl font-semibold text-gray-900">
-            Gestione Refit
+            Bds Project Manager
           </h1>
         </div>
       </div>
@@ -90,7 +90,7 @@ export function Header() {
                     Progetto completato
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Refit Roma Prati terminato con successo
+                    Progetto Roma Prati terminato con successo
                   </div>
                 </div>
               </div>

@@ -36,6 +36,28 @@ interface ProjectDetailsProps {
 
 export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject }: ProjectDetailsProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team'>('overview');
+  const [showAddMemberInput, setShowAddMemberInput] = useState(false);
+  const [newMemberName, setNewMemberName] = useState('');
+
+  const addTeamMember = () => {
+    if (newMemberName.trim() && !project.team.includes(newMemberName.trim())) {
+      const updatedProject = {
+        ...project,
+        team: [...project.team, newMemberName.trim()]
+      };
+      onUpdateProject(updatedProject);
+      setNewMemberName('');
+      setShowAddMemberInput(false);
+    }
+  };
+
+  const removeTeamMember = (memberToRemove: string) => {
+    const updatedProject = {
+      ...project,
+      team: project.team.filter(member => member !== memberToRemove)
+    };
+    onUpdateProject(updatedProject);
+  };
 
   const getStatusColor = (status: Project['status']) => {
     switch (status) {
@@ -253,7 +275,10 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
             <ProjectPhases
               phases={project.phases}
               onUpdatePhases={(phases) => {
+                console.log('💾 PROJECT DETAILS - Updating phases:', phases);
+                console.log('💾 PROJECT DETAILS - Original project:', project);
                 const updatedProject = { ...project, phases };
+                console.log('💾 PROJECT DETAILS - Updated project:', updatedProject);
                 onUpdateProject(updatedProject);
               }}
             />
@@ -440,10 +465,30 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Team del Progetto</h3>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Aggiungi Membro
-                </Button>
+                {!showAddMemberInput ? (
+                  <Button size="sm" onClick={() => setShowAddMemberInput(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Aggiungi Membro
+                  </Button>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nome membro..."
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addTeamMember()}
+                      autoFocus
+                    />
+                    <Button size="sm" onClick={addTeamMember} disabled={!newMemberName.trim()}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => {setShowAddMemberInput(false); setNewMemberName('');}}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Project Manager */}
@@ -473,19 +518,29 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {project.team.map((member, index) => (
-                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                              <span className="text-sm font-medium text-gray-600">
-                                {member.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </span>
+                      <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0">
+                              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-600">
+                                  {member.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-3">
+                              <p className="text-sm font-medium text-gray-900">{member}</p>
+                              <p className="text-sm text-gray-600">Team Member</p>
                             </div>
                           </div>
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900">{member}</p>
-                            <p className="text-sm text-gray-600">Team Member</p>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTeamMember(member)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     ))}

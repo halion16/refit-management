@@ -1,4 +1,4 @@
-// REFIT MANAGEMENT APP - TYPE DEFINITIONS
+// BDS PROJECT MANAGER - TYPE DEFINITIONS
 
 export interface Location {
   id: string;

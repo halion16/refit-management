@@ -84,7 +84,7 @@ function RecentActivityCard() {
       id: '1',
       type: 'project',
       title: 'Nuovo progetto creato',
-      subtitle: 'Refit Milano Corso Buenos Aires',
+      subtitle: 'Progetto Milano Corso Buenos Aires',
       timestamp: new Date().toISOString(),
       status: 'info'
     },

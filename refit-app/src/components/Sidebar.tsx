@@ -133,7 +133,7 @@ export function Sidebar() {
                 <Building2 className="h-5 w-5 text-white" />
               </div>
               <span className="ml-2 text-lg font-semibold text-gray-900">
-                Refit Manager
+                Bds Project Manager
               </span>
             </div>
             <Button
