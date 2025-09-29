@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProjectPhases } from '@/components/ProjectPhases';
+import ProjectDocuments from '@/components/ProjectDocuments';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Project, Location } from '@/types';
 
@@ -36,7 +37,7 @@ interface ProjectDetailsProps {
 
 
 export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject, onRequestQuote }: ProjectDetailsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team' | 'documents'>('overview');
   const [showAddMemberInput, setShowAddMemberInput] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
 
@@ -122,7 +123,8 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
     { id: 'phases', label: 'Fasi', icon: <CheckCircle className="h-4 w-4" /> },
     { id: 'budget', label: 'Budget', icon: <Euro className="h-4 w-4" /> },
     { id: 'timeline', label: 'Timeline', icon: <Calendar className="h-4 w-4" /> },
-    { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> }
+    { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> },
+    { id: 'documents', label: 'Documenti', icon: <FileText className="h-4 w-4" /> }
   ];
 
   return (
@@ -550,6 +552,22 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="space-y-6">
+              <ProjectDocuments
+                projectId={project.id}
+                documents={project.documents || []}
+                onUpdateDocuments={(newDocuments) => {
+                  const updatedProject = {
+                    ...project,
+                    documents: newDocuments
+                  };
+                  onUpdateProject(updatedProject);
+                }}
+              />
             </div>
           )}
         </div>

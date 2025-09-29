@@ -7,6 +7,7 @@ import { Locations } from '@/components/Locations';
 import { Projects } from '@/components/Projects';
 import { Contractors } from '@/components/Contractors';
 import Quotes from '@/components/Quotes';
+import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
 
@@ -16,27 +17,19 @@ export default function Home() {
   const currentUser = useCurrentUser();
   const login = useLogin();
 
-  // Auto-login for demo purposes
+  // Auto-login con utente da dati di esempio
   useEffect(() => {
     if (hydrated && !currentUser) {
-      const demoUser = {
-        id: 'demo-user-1',
-        firstName: 'Mario',
-        lastName: 'Rossi',
-        email: 'mario.rossi@company.com',
-        role: 'project_manager' as const,
-        permissions: [
-          { resource: 'projects', actions: ['create', 'read', 'update', 'delete'] },
-          { resource: 'stores', actions: ['create', 'read', 'update', 'delete'] },
-          { resource: 'contractors', actions: ['create', 'read', 'update', 'delete'] },
-          { resource: 'quotes', actions: ['create', 'read', 'update', 'delete'] }
-        ],
-        department: 'Operations',
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      login(demoUser);
+      // Prova a caricare l'utente corrente dal localStorage
+      const storedUser = localStorage.getItem('refit_current_user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          login(user);
+        } catch (error) {
+          console.error('Errore caricamento utente:', error);
+        }
+      }
     }
   }, [hydrated, currentUser, login]);
 
@@ -79,6 +72,7 @@ export default function Home() {
 
   return (
     <Layout>
+      <DataInitializer />
       {renderCurrentView()}
     </Layout>
   );

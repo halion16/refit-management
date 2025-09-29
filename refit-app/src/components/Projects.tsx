@@ -673,6 +673,21 @@ function ProjectCard({
         </div>
       )}
 
+      {/* Documenti Overview */}
+      {project.documents && project.documents.length > 0 && (
+        <div className="mb-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700 flex items-center">
+              <FileText className="h-4 w-4 mr-1" />
+              Documenti ({project.documents.length})
+            </span>
+            <div className="flex items-center text-xs text-gray-600">
+              {project.documents.filter(doc => doc.isActive).length} attivi
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex space-x-2">
           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>

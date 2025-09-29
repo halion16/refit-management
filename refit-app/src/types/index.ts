@@ -174,6 +174,15 @@ export interface Quote {
     approvedAt?: string;
     rejectionReason?: string;
   };
+  paymentTerms: PaymentTerm[];
+  payments: Payment[];
+  paymentConfig: {
+    vatRate?: number;
+    withholdingTaxRate?: number;
+    retentionRate?: number;
+    paymentMethod?: PaymentMethod;
+    bankDetails?: string;
+  };
 }
 
 export interface QuoteItem {
@@ -186,11 +195,109 @@ export interface QuoteItem {
   category: string;
 }
 
+// Tipi per gestione pagamenti
+export type PaymentTermType = 'advance' | 'progress' | 'completion' | 'retention' | 'balance';
+export type PaymentMethod = 'bank_transfer' | 'check' | 'cash' | 'credit_card' | 'other';
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'cancelled';
+
+export interface PaymentTerm {
+  id: string;
+  quoteId: string;
+  description: string;
+  type: PaymentTermType;
+  percentage?: number;        // % del totale (es. 30%)
+  fixedAmount?: number;      // Importo fisso
+  dueAfterDays?: number;     // Giorni dopo evento trigger
+  triggerEvent: 'order_confirmation' | 'delivery' | 'installation_start' | 'installation_complete' | 'approval' | 'custom_date';
+  customDueDate?: string;    // Data specifica se triggerEvent è 'custom_date'
+  conditions?: string;       // Condizioni specifiche
+  vatIncluded: boolean;
+  order: number;             // Ordine di pagamento
+  isActive: boolean;
+}
+
+export interface Payment {
+  id: string;
+  quoteId: string;
+  paymentTermId: string;
+  plannedAmount: number;     // Importo pianificato
+  paidAmount: number;        // Importo effettivamente pagato
+  plannedDate: string;       // Data pianificata
+  paymentDate?: string;      // Data effettiva pagamento
+  status: PaymentStatus;
+  method?: PaymentMethod;
+  reference?: string;        // Numero bonifico, assegno, etc.
+  invoiceNumber?: string;    // Numero fattura collegata
+  notes?: string;
+  fees?: number;            // Eventuali commissioni
+  exchangeRate?: number;    // Tasso di cambio se valuta diversa
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaymentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  paymentTerms: Omit<PaymentTerm, 'id' | 'quoteId'>[];
+  category: 'standard' | 'custom' | 'industry_specific';
+  isDefault: boolean;
+  createdAt: string;
+}
+
+// Categorie specifiche per documenti di progetto
+export type ProjectDocumentCategory =
+  // Documentazione Tecnica
+  | 'technical_drawings'    // Disegni tecnici e planimetrie
+  | 'technical_specs'       // Specifiche tecniche
+  | 'technical_reports'     // Relazioni tecniche
+  | 'structural_calcs'      // Calcoli strutturali
+  | 'material_specs'        // Schede tecniche materiali
+
+  // Documentazione Approvativa
+  | 'municipal_permits'     // Permessi comunali
+  | 'authorizations'        // Autorizzazioni
+  | 'licenses'              // Licenze e concessioni
+  | 'entity_opinions'       // Pareri enti
+  | 'compliance_certs'      // Certificazioni di conformità
+
+  // Documentazione Amministrativa
+  | 'contracts'             // Contratti
+  | 'specifications'        // Capitolati
+  | 'site_minutes'          // Verbali di cantiere
+  | 'official_comms'        // Comunicazioni ufficiali
+  | 'correspondence'        // Corrispondenza
+
+  // Documentazione Finanziaria
+  | 'quotes_offers'         // Preventivi e offerte
+  | 'invoices'              // Fatture
+  | 'progress_reports'      // SAL (Stati Avanzamento Lavori)
+  | 'payment_certs'         // Certificati di pagamento
+  | 'variations'            // Varianti in corso d'opera
+
+  // Documentazione di Controllo
+  | 'inspection_reports'    // Verbali di sopralluogo
+  | 'quality_reports'       // Report di controllo qualità
+  | 'tests_approvals'       // Test e collaudi
+  | 'non_compliance'        // Non conformità
+  | 'corrective_actions'    // Azioni correttive
+
+  // Documentazione Fotografica
+  | 'photos_before'         // Foto ante operam
+  | 'photos_during'         // Foto in corso d'opera
+  | 'photos_after'          // Foto post operam
+  | 'photos_progress'       // Foto per SAL
+  | 'photos_damage'         // Documentazione danni
+
+  // Altri documenti
+  | 'other';
+
 export interface Document {
   id: string;
   name: string;
   type: 'contract' | 'invoice' | 'quote' | 'certification' | 'permit' | 'plan' | 'photo' | 'other';
   category: string;
+  projectCategory?: ProjectDocumentCategory; // Categoria specifica per documenti di progetto
   size: number; // bytes
   mimeType: string;
   url: string; // base64 o blob URL per localStorage
@@ -256,7 +363,9 @@ export const STORAGE_KEYS = {
   USERS: 'refit_users',
   CURRENT_USER: 'refit_current_user',
   APP_SETTINGS: 'refit_app_settings',
-  BACKUP_DATA: 'refit_backup'
+  BACKUP_DATA: 'refit_backup',
+  PAYMENT_TEMPLATES: 'refit_payment_templates',
+  PAYMENTS: 'refit_payments'
 } as const;
 
 // Utility Types

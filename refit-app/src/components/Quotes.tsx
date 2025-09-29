@@ -285,7 +285,7 @@ export default function Quotes() {
       </div>
 
       {/* Lista Preventivi Raggruppati */}
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
         {Object.entries(groupedQuotes).map(([groupName, groupQuotes]) => (
           <div key={groupName} className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-4 border-b border-gray-200 bg-gray-50">

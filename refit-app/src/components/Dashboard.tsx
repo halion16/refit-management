@@ -12,6 +12,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import SampleDataBanner from '@/components/SampleDataBanner';
 import { useProjects } from '@/hooks/useProjects';
 import { useLocations } from '@/hooks/useLocations';
 import { useContractors } from '@/hooks/useContractors';
@@ -225,6 +226,9 @@ export function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600">Panoramica generale dei tuoi progetti refit</p>
       </div>
+
+      {/* Sample Data Banner */}
+      <SampleDataBanner />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

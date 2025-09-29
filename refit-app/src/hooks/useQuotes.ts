@@ -35,6 +35,13 @@ export const useQuotes = () => {
     const newQuote: Quote = {
       ...quote,
       id: Date.now().toString(),
+      // Inizializza le proprietà per i pagamenti se non presenti
+      paymentTerms: quote.paymentTerms || [],
+      payments: quote.payments || [],
+      paymentConfig: quote.paymentConfig || {
+        vatRate: 22,
+        paymentMethod: 'bank_transfer'
+      }
     };
     const updatedQuotes = [...data, newQuote];
     saveQuotes(updatedQuotes);
