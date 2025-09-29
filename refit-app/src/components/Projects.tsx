@@ -19,11 +19,17 @@ import {
   PauseCircle,
   Target,
   TrendingUp,
-  Building2
+  Building2,
+  FileText,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProjectDetails } from '@/components/ProjectDetails';
-import { useProjects, useLocations } from '@/hooks/useLocalStorage';
+import { useProjects } from '@/hooks/useProjects';
+import { useLocations } from '@/hooks/useLocations';
+import { useQuotes } from '@/hooks/useQuotes';
+import { useContractors } from '@/hooks/useContractors';
+import { useSetCurrentView } from '@/store';
 import { formatDate, formatCurrency, generateId } from '@/lib/utils';
 import type { Project, Location } from '@/types';
 
@@ -439,16 +445,32 @@ function ProjectForm({
 function ProjectCard({
   project,
   location,
+  quotes,
+  contractors,
   onEdit,
   onDelete,
   onView
 }: {
   project: Project;
   location?: Location;
+  quotes: any[];
+  contractors: any[];
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
   onView: (project: Project) => void;
 }) {
+  // Filter quotes for this project
+  const projectQuotes = quotes.filter(quote => quote.projectId === project.id);
+
+  // Calculate phases statistics
+  const totalPhases = project.phases?.length || 0;
+  const completedPhases = project.phases?.filter(phase => phase.status === 'completed').length || 0;
+  const inProgressPhases = project.phases?.filter(phase => phase.status === 'in_progress').length || 0;
+
+  // Calculate quotes statistics
+  const totalQuotesAmount = projectQuotes.reduce((sum, quote) => sum + quote.totalAmount, 0);
+  const approvedQuotes = projectQuotes.filter(quote => quote.status === 'approved').length;
+
   const getStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'planning': return 'bg-blue-100 text-blue-800';
@@ -560,6 +582,97 @@ function ProjectCard({
         )}
       </div>
 
+      {/* Fasi Overview */}
+      {totalPhases > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-md border border-blue-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-blue-700 flex items-center">
+              <Layers className="h-4 w-4 mr-1" />
+              Fasi ({totalPhases})
+            </span>
+            <div className="flex items-center text-xs text-blue-600">
+              {completedPhases > 0 && <span className="mr-2">✅ {completedPhases}</span>}
+              {inProgressPhases > 0 && <span>🔄 {inProgressPhases}</span>}
+            </div>
+          </div>
+          <div className="space-y-1">
+            {project.phases?.slice(0, 2).map((phase, index) => (
+              <div key={phase.id} className="flex items-center justify-between text-xs">
+                <span className="truncate font-medium text-gray-900">
+                  {index + 1}. {phase.name}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-1.5 py-0.5 rounded text-xs ${
+                    phase.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    phase.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                    phase.status === 'blocked' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {phase.progress}%
+                  </span>
+                </div>
+              </div>
+            ))}
+            {project.phases && project.phases.length > 2 && (
+              <div className="text-xs text-blue-600 text-center">
+                +{project.phases.length - 2} altre fasi
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Preventivi Overview */}
+      {projectQuotes.length > 0 && (
+        <div className="mb-4 p-3 bg-green-50 rounded-md border border-green-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-green-700 flex items-center">
+              <FileText className="h-4 w-4 mr-1" />
+              Preventivi ({projectQuotes.length})
+            </span>
+            <div className="flex items-center text-xs text-green-600">
+              {approvedQuotes > 0 && <span className="mr-2">✅ {approvedQuotes}</span>}
+              <span className="font-bold">€{totalQuotesAmount.toLocaleString()}</span>
+            </div>
+          </div>
+          <div className="space-y-1">
+            {projectQuotes.slice(0, 2).map((quote) => {
+              const contractor = contractors.find(c => c.id === quote.contractorId);
+              return (
+                <div key={quote.id} className="flex items-center justify-between text-xs">
+                  <span className="truncate font-medium text-gray-900">
+                    {contractor?.name || contractor?.companyName || 'N/A'}
+                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${
+                      quote.status === 'approved' ? 'bg-green-100 text-green-700' :
+                      quote.status === 'received' ? 'bg-blue-100 text-blue-700' :
+                      quote.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {quote.status === 'approved' ? 'Approvato' :
+                       quote.status === 'received' ? 'Ricevuto' :
+                       quote.status === 'rejected' ? 'Rifiutato' :
+                       quote.status === 'under_review' ? 'In Revisione' :
+                       quote.status === 'sent' ? 'Inviato' :
+                       quote.status === 'draft' ? 'Bozza' : 'Scaduto'}
+                    </span>
+                    <span className="font-bold text-green-700">
+                      €{quote.totalAmount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {projectQuotes.length > 2 && (
+              <div className="text-xs text-green-600 text-center">
+                +{projectQuotes.length - 2} altri preventivi
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex space-x-2">
           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
@@ -583,6 +696,9 @@ function ProjectCard({
 export function Projects() {
   const { data: projects, addItem, updateItem, deleteItem, loading, error } = useProjects();
   const { data: locations } = useLocations();
+  const { data: quotes } = useQuotes();
+  const { data: contractors } = useContractors();
+  const setCurrentView = useSetCurrentView();
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [viewingProject, setViewingProject] = useState<Project | undefined>();
@@ -618,6 +734,13 @@ export function Projects() {
   const handleEdit = (project: Project) => {
     setEditingProject(project);
     setShowForm(true);
+  };
+
+  const handleRequestQuote = (projectId: string, phaseId?: string) => {
+    // Store the project and phase info for the quote form
+    localStorage.setItem('quoteFormContext', JSON.stringify({ projectId, phaseId }));
+    // Navigate to quotes page
+    setCurrentView('quotes');
   };
 
   const handleDelete = (id: string) => {
@@ -819,6 +942,8 @@ export function Projects() {
               key={project.id}
               project={project}
               location={locations.find(l => l.id === project.locationId)}
+              quotes={quotes}
+              contractors={contractors}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onView={handleView}
@@ -857,6 +982,7 @@ export function Projects() {
             updateItem(updatedProject.id, updatedProject);
             setViewingProject(updatedProject);
           }}
+          onRequestQuote={handleRequestQuote}
         />
       )}
 

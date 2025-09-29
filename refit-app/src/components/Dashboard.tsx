@@ -12,7 +12,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { useProjects, useLocations, useContractors, useQuotes } from '@/hooks/useLocalStorage';
+import { useProjects } from '@/hooks/useProjects';
+import { useLocations } from '@/hooks/useLocations';
+import { useContractors } from '@/hooks/useContractors';
+import { useQuotes } from '@/hooks/useQuotes';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { useSetCurrentView } from '@/store';
 

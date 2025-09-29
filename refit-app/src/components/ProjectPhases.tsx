@@ -15,12 +15,16 @@ import {
   Users,
   ArrowUp,
   ArrowDown,
-  Target
+  Target,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatDate, formatCurrency, generateId } from '@/lib/utils';
-import { useContractors } from '@/hooks/useLocalStorage';
-import type { ProjectPhase, Task } from '@/types';
+import { useContractors } from '@/hooks/useContractors';
+import { useQuotes } from '@/hooks/useQuotes';
+import QuoteSelector from './QuoteSelector';
+import QuoteDetails from './QuoteDetails';
+import type { ProjectPhase, Task, Quote } from '@/types';
 
 interface PhaseFormData {
   name: string;
@@ -277,7 +281,10 @@ function PhaseCard({
   onMoveUp,
   onMoveDown,
   onUpdateStatus,
-  onUpdateProgress
+  onUpdateProgress,
+  onRequestQuote,
+  projectId,
+  onViewQuote
 }: {
   phase: ProjectPhase;
   index: number;
@@ -288,9 +295,19 @@ function PhaseCard({
   onMoveDown: (id: string) => void;
   onUpdateStatus: (id: string, status: ProjectPhase['status']) => void;
   onUpdateProgress: (id: string, progress: number) => void;
+  onRequestQuote?: (phase: ProjectPhase) => void;
+  projectId?: string;
+  onViewQuote?: (quote: Quote) => void;
 }) {
   const [showProgressEdit, setShowProgressEdit] = useState(false);
   const [tempProgress, setTempProgress] = useState(phase.progress);
+  const { data: quotes } = useQuotes();
+  const { data: contractors } = useContractors();
+
+  // Get quotes linked to this phase
+  const phaseQuotes = quotes.filter(quote =>
+    quote.projectId === projectId && quote.phaseId === phase.id
+  );
 
   const getStatusColor = (status: ProjectPhase['status']) => {
     switch (status) {
@@ -323,6 +340,21 @@ function PhaseCard({
   };
 
   const statusOptions: ProjectPhase['status'][] = ['pending', 'in_progress', 'completed', 'blocked'];
+
+  const getQuoteStatusBadge = (status: Quote['status']) => {
+    const statusConfig = {
+      draft: { label: 'Bozza', color: 'bg-gray-100 text-gray-600' },
+      sent: { label: 'Inviato', color: 'bg-blue-100 text-blue-600' },
+      received: { label: 'Ricevuto', color: 'bg-green-100 text-green-600' },
+      under_review: { label: 'In Revisione', color: 'bg-yellow-100 text-yellow-600' },
+      approved: { label: 'Approvato', color: 'bg-emerald-100 text-emerald-600' },
+      rejected: { label: 'Rifiutato', color: 'bg-red-100 text-red-600' },
+      expired: { label: 'Scaduto', color: 'bg-gray-100 text-gray-600' }
+    };
+
+    const config = statusConfig[status];
+    return config;
+  };
 
   const handleProgressSubmit = () => {
     onUpdateProgress(phase.id, tempProgress);
@@ -458,6 +490,55 @@ function PhaseCard({
               </div>
             </div>
 
+            {/* Preventivi Collegati */}
+            {phaseQuotes.length > 0 && (
+              <div className="mb-2 p-2 bg-green-50 rounded-md border border-green-200">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-green-700 flex items-center">
+                    <Euro className="h-3 w-3 mr-1" />
+                    Preventivi ({phaseQuotes.length})
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {phaseQuotes.slice(0, 2).map((quote) => {
+                    const contractor = contractors.find(c => c.id === quote.contractorId);
+                    const statusConfig = getQuoteStatusBadge(quote.status);
+                    return (
+                      <div key={quote.id} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                          <span className="truncate font-medium text-gray-900">
+                            {contractor?.name || contractor?.companyName || 'N/A'}
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-green-700">
+                            €{quote.totalAmount.toLocaleString()}
+                          </span>
+                          {onViewQuote && (
+                            <button
+                              onClick={() => onViewQuote(quote)}
+                              className="text-gray-400 hover:text-blue-600"
+                              title="Visualizza dettagli"
+                            >
+                              <Eye className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {phaseQuotes.length > 2 && (
+                    <div className="text-xs text-green-600 text-center">
+                      +{phaseQuotes.length - 2} altri preventivi
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Quick Status Change */}
             <div className="flex items-center justify-between">
               <select
@@ -483,6 +564,17 @@ function PhaseCard({
           <Button variant="ghost" size="sm" onClick={() => onEdit(phase)} className="h-7 w-7 p-0">
             <Edit className="h-3 w-3" />
           </Button>
+          {onRequestQuote && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRequestQuote(phase)}
+              className="h-7 w-7 p-0"
+              title="Richiedi Preventivo"
+            >
+              <Euro className="h-3 w-3 text-green-600" />
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => onDelete(phase.id)} className="h-7 w-7 p-0">
             <Trash2 className="h-3 w-3 text-red-600" />
           </Button>
@@ -504,13 +596,21 @@ function PhaseCard({
 
 export function ProjectPhases({
   phases,
-  onUpdatePhases
+  onUpdatePhases,
+  onRequestQuote,
+  projectId
 }: {
   phases: ProjectPhase[];
   onUpdatePhases: (phases: ProjectPhase[]) => void;
+  onRequestQuote?: (phase: ProjectPhase) => void;
+  projectId?: string;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingPhase, setEditingPhase] = useState<ProjectPhase | undefined>();
+  const [showQuoteSelector, setShowQuoteSelector] = useState(false);
+  const [selectedPhaseForQuote, setSelectedPhaseForQuote] = useState<ProjectPhase | undefined>();
+  const [showQuoteDetails, setShowQuoteDetails] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | undefined>();
 
   const handleSave = (formData: PhaseFormData) => {
     console.log('🔄 SAVING PHASE - FormData:', formData);
@@ -627,6 +727,23 @@ export function ProjectPhases({
     onUpdatePhases(updatedPhases);
   };
 
+  const handleRequestQuote = (phase: ProjectPhase) => {
+    setSelectedPhaseForQuote(phase);
+    setShowQuoteSelector(true);
+  };
+
+  const handleCreateNewQuote = () => {
+    setShowQuoteSelector(false);
+    if (onRequestQuote && selectedPhaseForQuote) {
+      onRequestQuote(selectedPhaseForQuote);
+    }
+  };
+
+  const handleViewQuote = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setShowQuoteDetails(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -693,6 +810,9 @@ export function ProjectPhases({
                 onMoveDown={handleMoveDown}
                 onUpdateStatus={handleUpdateStatus}
                 onUpdateProgress={handleUpdateProgress}
+                onRequestQuote={handleRequestQuote}
+                projectId={projectId}
+                onViewQuote={handleViewQuote}
               />
             ))}
           </div>
@@ -708,6 +828,39 @@ export function ProjectPhases({
           onCancel={() => {
             setShowForm(false);
             setEditingPhase(undefined);
+          }}
+        />
+      )}
+
+      {/* Quote Selector Modal */}
+      {showQuoteSelector && selectedPhaseForQuote && projectId && (
+        <QuoteSelector
+          projectId={projectId}
+          phase={selectedPhaseForQuote}
+          onClose={() => {
+            setShowQuoteSelector(false);
+            setSelectedPhaseForQuote(undefined);
+          }}
+          onCreateNew={handleCreateNewQuote}
+          onViewQuote={handleViewQuote}
+        />
+      )}
+
+      {/* Quote Details Modal */}
+      {showQuoteDetails && selectedQuote && (
+        <QuoteDetails
+          quote={selectedQuote}
+          onClose={() => {
+            setShowQuoteDetails(false);
+            setSelectedQuote(undefined);
+          }}
+          onEdit={(quote) => {
+            setShowQuoteDetails(false);
+            // Navigate to quotes page with edit context
+            if (onRequestQuote) {
+              localStorage.setItem('editQuoteContext', JSON.stringify({ quoteId: quote.id }));
+              onRequestQuote(selectedPhaseForQuote!);
+            }
           }}
         />
       )}

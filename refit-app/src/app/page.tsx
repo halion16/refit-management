@@ -6,6 +6,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { Locations } from '@/components/Locations';
 import { Projects } from '@/components/Projects';
 import { Contractors } from '@/components/Contractors';
+import Quotes from '@/components/Quotes';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
 
@@ -50,14 +51,7 @@ export default function Home() {
       case 'contractors':
         return <Contractors />;
       case 'quotes':
-        return (
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Preventivi</h1>
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <p className="text-gray-600">Gestione preventivi in sviluppo...</p>
-            </div>
-          </div>
-        );
+        return <Quotes />;
       case 'settings':
         return (
           <div>

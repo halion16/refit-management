@@ -1,0 +1,393 @@
+'use client';
+
+import { useState } from 'react';
+import { Quote, Contractor, Project, ProjectPhase, Document } from '@/types';
+import { useContractors } from '@/hooks/useContractors';
+import { useProjects } from '@/hooks/useProjects';
+import {
+  X,
+  Calendar,
+  Euro,
+  FileText,
+  Download,
+  Eye,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  User,
+  Building,
+  Package
+} from 'lucide-react';
+
+interface QuoteDetailsProps {
+  quote: Quote;
+  onClose: () => void;
+  onEdit: (quote: Quote) => void;
+  onApprove?: (quote: Quote) => void;
+  onReject?: (quote: Quote) => void;
+}
+
+export default function QuoteDetails({ quote, onClose, onEdit, onApprove, onReject }: QuoteDetailsProps) {
+  const { data: contractors } = useContractors();
+  const { data: projects } = useProjects();
+
+  const contractor = contractors.find(c => c.id === quote.contractorId);
+  const project = projects.find(p => p.id === quote.projectId);
+  const phase = project?.phases.find(p => p.id === quote.phaseId);
+
+  const getStatusBadge = (status: Quote['status']) => {
+    const statusConfig = {
+      draft: { label: 'Bozza', color: 'bg-gray-100 text-gray-800', icon: Clock },
+      sent: { label: 'Inviato', color: 'bg-blue-100 text-blue-800', icon: Clock },
+      received: { label: 'Ricevuto', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      under_review: { label: 'In Revisione', color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
+      approved: { label: 'Approvato', color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle },
+      rejected: { label: 'Rifiutato', color: 'bg-red-100 text-red-800', icon: X },
+      expired: { label: 'Scaduto', color: 'bg-gray-100 text-gray-800', icon: AlertCircle }
+    };
+
+    const config = statusConfig[status];
+    const IconComponent = config.icon;
+
+    return (
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
+        <IconComponent className="h-4 w-4 mr-1" />
+        {config.label}
+      </span>
+    );
+  };
+
+  const isExpired = () => {
+    if (!quote.validUntil) return false;
+    return new Date(quote.validUntil) < new Date();
+  };
+
+  const handleDownloadDocument = (document: Document) => {
+    try {
+      const base64Data = document.url.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: document.mimeType });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = document.name;
+      document.body.appendChild(link);
+      link.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Errore durante il download del documento');
+    }
+  };
+
+  const handleViewDocument = (document: Document) => {
+    const newWindow = window.open();
+    if (newWindow) {
+      if (document.mimeType.includes('pdf')) {
+        newWindow.document.write(`
+          <html>
+            <head><title>${document.name}</title></head>
+            <body style="margin: 0;">
+              <embed src="${document.url}" type="application/pdf" width="100%" height="100%" />
+            </body>
+          </html>
+        `);
+      } else if (document.mimeType.includes('image')) {
+        newWindow.document.write(`
+          <html>
+            <head><title>${document.name}</title></head>
+            <body style="margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0;">
+              <img src="${document.url}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            </body>
+          </html>
+        `);
+      } else {
+        handleDownloadDocument(document);
+        newWindow.close();
+      }
+    }
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
+    if (mimeType.includes('image')) return <FileText className="h-5 w-5 text-blue-500" />;
+    return <FileText className="h-5 w-5 text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex justify-between items-start p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {quote.quoteNumber || `PREV-${quote.id.slice(-6)}`}
+            </h2>
+            <div className="flex items-center gap-3 mt-2">
+              {getStatusBadge(quote.status)}
+              {isExpired() && (
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                  ⚠️ Scaduto
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Informazioni Generali */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <User className="h-5 w-5 text-gray-400" />
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Fornitore</div>
+                  <div className="text-gray-900">{contractor?.name || contractor?.companyName || 'N/A'}</div>
+                  {contractor?.rating && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <span
+                          key={star}
+                          className={`text-xs ${
+                            star <= contractor.rating.overall ? 'text-yellow-400' : 'text-gray-300'
+                          }`}
+                        >
+                          ⭐
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Building className="h-5 w-5 text-gray-400" />
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Progetto</div>
+                  <div className="text-gray-900">{project?.name || 'N/A'}</div>
+                  {phase && (
+                    <div className="text-sm text-gray-600">Fase: {phase.name}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <Calendar className="h-5 w-5 text-gray-400" />
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Date</div>
+                  <div className="text-sm text-gray-900">
+                    Richiesta: {new Date(quote.requestDate).toLocaleDateString()}
+                  </div>
+                  {quote.responseDate && (
+                    <div className="text-sm text-gray-600">
+                      Risposta: {new Date(quote.responseDate).toLocaleDateString()}
+                    </div>
+                  )}
+                  {quote.validUntil && (
+                    <div className={`text-sm ${isExpired() ? 'text-red-600' : 'text-gray-600'}`}>
+                      Valido fino: {new Date(quote.validUntil).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Euro className="h-5 w-5 text-gray-400" />
+                <div>
+                  <div className="text-sm font-medium text-gray-700">Importo Totale</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    €{quote.totalAmount.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {quote.items.length} voci • {quote.currency}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Voci di Preventivo */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Package className="h-5 w-5 mr-2" />
+              Voci di Preventivo
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Descrizione
+                    </th>
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Q.tà
+                    </th>
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Unità
+                    </th>
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Prezzo Unit.
+                    </th>
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Categoria
+                    </th>
+                    <th className="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                      Totale
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quote.items.map((item, index) => (
+                    <tr key={item.id || index} className="hover:bg-gray-50">
+                      <td className="border border-gray-200 px-4 py-2 text-sm">{item.description}</td>
+                      <td className="border border-gray-200 px-4 py-2 text-sm">{item.quantity}</td>
+                      <td className="border border-gray-200 px-4 py-2 text-sm">{item.unit}</td>
+                      <td className="border border-gray-200 px-4 py-2 text-sm">€{item.unitPrice.toFixed(2)}</td>
+                      <td className="border border-gray-200 px-4 py-2 text-sm">{item.category}</td>
+                      <td className="border border-gray-200 px-4 py-2 text-sm font-medium">€{item.totalPrice.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Documenti */}
+          {quote.documents && quote.documents.length > 0 && (
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Documenti ({quote.documents.length})
+              </h3>
+              <div className="space-y-2">
+                {quote.documents.map((document) => (
+                  <div
+                    key={document.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center space-x-3 flex-1">
+                      {getFileIcon(document.mimeType)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {document.name}
+                        </p>
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <span>{formatFileSize(document.size)}</span>
+                          <span>•</span>
+                          <span>{document.category}</span>
+                          <span>•</span>
+                          <span>{new Date(document.uploadedAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleViewDocument(document)}
+                        className="p-2 text-gray-400 hover:text-blue-600 rounded"
+                        title="Visualizza"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDownloadDocument(document)}
+                        className="p-2 text-gray-400 hover:text-green-600 rounded"
+                        title="Scarica"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Condizioni e Note */}
+          {(quote.terms || quote.notes) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {quote.terms && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Condizioni</h4>
+                  <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-900 whitespace-pre-wrap">
+                    {quote.terms}
+                  </div>
+                </div>
+              )}
+
+              {quote.notes && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Note</h4>
+                  <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-900 whitespace-pre-wrap">
+                    {quote.notes}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex gap-3">
+            <button
+              onClick={() => onEdit(quote)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Modifica
+            </button>
+            {quote.status === 'received' && onApprove && (
+              <button
+                onClick={() => onApprove(quote)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Approva
+              </button>
+            )}
+            {quote.status === 'received' && onReject && (
+              <button
+                onClick={() => onReject(quote)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Rifiuta
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+          >
+            Chiudi
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

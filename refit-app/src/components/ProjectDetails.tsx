@@ -31,10 +31,11 @@ interface ProjectDetailsProps {
   onClose: () => void;
   onEdit: (project: Project) => void;
   onUpdateProject: (project: Project) => void;
+  onRequestQuote?: (projectId: string, phaseId?: string) => void;
 }
 
 
-export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject }: ProjectDetailsProps) {
+export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject, onRequestQuote }: ProjectDetailsProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team'>('overview');
   const [showAddMemberInput, setShowAddMemberInput] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
@@ -274,6 +275,7 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
           {activeTab === 'phases' && (
             <ProjectPhases
               phases={project.phases}
+              projectId={project.id}
               onUpdatePhases={(phases) => {
                 console.log('💾 PROJECT DETAILS - Updating phases:', phases);
                 console.log('💾 PROJECT DETAILS - Original project:', project);
@@ -281,6 +283,7 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
                 console.log('💾 PROJECT DETAILS - Updated project:', updatedProject);
                 onUpdateProject(updatedProject);
               }}
+              onRequestQuote={onRequestQuote ? (phase) => onRequestQuote(project.id, phase.id) : undefined}
             />
           )}
 
