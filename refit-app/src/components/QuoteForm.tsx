@@ -34,6 +34,20 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
     notes: quote?.notes || ''
   });
 
+  // Gestione percentuali per breakdown fasi
+  const [phasePercentages, setPhasePercentages] = useState<Record<string, number>>(() => {
+    if (quote?.phaseBreakdown) {
+      const percentages: Record<string, number> = {};
+      quote.phaseBreakdown.forEach(breakdown => {
+        percentages[breakdown.phaseId] = quote.totalAmount > 0
+          ? Math.round((breakdown.subtotal / quote.totalAmount) * 100)
+          : 0;
+      });
+      return percentages;
+    }
+    return {};
+  });
+
   const [items, setItems] = useState<QuoteItem[]>(quote?.items || []);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [documents, setDocuments] = useState<Document[]>(quote?.documents || []);
@@ -51,6 +65,50 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
     const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
     setFormData(prev => ({ ...prev, totalAmount: total }));
   }, [items]);
+
+  // Auto-distribuzione equa delle percentuali quando cambiano le fasi selezionate
+  useEffect(() => {
+    if (formData.phaseIds.length > 1) {
+      const equalPercentage = Math.floor(100 / formData.phaseIds.length);
+      const remainder = 100 - (equalPercentage * formData.phaseIds.length);
+
+      const newPercentages: Record<string, number> = {};
+      formData.phaseIds.forEach((phaseId, index) => {
+        // Aggiungi il resto alla prima fase
+        newPercentages[phaseId] = equalPercentage + (index === 0 ? remainder : 0);
+      });
+
+      setPhasePercentages(newPercentages);
+    } else {
+      setPhasePercentages({});
+    }
+  }, [formData.phaseIds]);
+
+  // Funzione per aggiornare le percentuali
+  const updatePhasePercentage = (phaseId: string, percentage: number) => {
+    setPhasePercentages(prev => ({
+      ...prev,
+      [phaseId]: Math.max(0, Math.min(100, percentage))
+    }));
+  };
+
+  // Calcola il totale delle percentuali
+  const getTotalPercentage = () => {
+    return Object.values(phasePercentages).reduce((sum, perc) => sum + perc, 0);
+  };
+
+  // Funzione per normalizzare le percentuali al 100%
+  const normalizePercentages = () => {
+    const total = getTotalPercentage();
+    if (total === 0) return;
+
+    const normalizedPercentages: Record<string, number> = {};
+    Object.entries(phasePercentages).forEach(([phaseId, percentage]) => {
+      normalizedPercentages[phaseId] = Math.round((percentage / total) * 100);
+    });
+
+    setPhasePercentages(normalizedPercentages);
+  };
 
   const addItem = () => {
     const newItem: QuoteItem = {
@@ -88,15 +146,37 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
       return;
     }
 
+    // Validazione percentuali per preventivi multi-fase
+    if (formData.phaseIds.length > 1) {
+      const totalPercentage = getTotalPercentage();
+      if (totalPercentage !== 100) {
+        alert(`Le percentuali devono sommare al 100%. Attualmente: ${totalPercentage}%. Usa il pulsante "Normalizza" per correggere automaticamente.`);
+        return;
+      }
+    }
+
     // Crea phaseBreakdown automatico se ci sono più fasi selezionate
     const phaseBreakdown = formData.phaseIds.length > 1 ?
       formData.phaseIds.map(phaseId => {
         const phase = phases.find(p => p.id === phaseId);
+        const percentage = phasePercentages[phaseId] || 0;
+        const subtotal = Math.round((formData.totalAmount * percentage) / 100 * 100) / 100; // Arrotonda a centesimi
+
         return {
           phaseId,
           phaseName: phase?.name || 'Fase sconosciuta',
-          items: items.filter(item => item.phaseId === phaseId),
-          subtotal: items.filter(item => item.phaseId === phaseId).reduce((sum, item) => sum + item.totalPrice, 0)
+          items: [{
+            id: `auto-${phaseId}`,
+            description: `Lavori per ${phase?.name || 'Fase sconosciuta'} (${percentage}% del totale)`,
+            quantity: 1,
+            unitPrice: subtotal,
+            totalPrice: subtotal,
+            unit: 'forfait',
+            category: 'Lavori',
+            phaseId: phaseId
+          }],
+          subtotal: subtotal,
+          notes: `Valorizzazione automatica: ${percentage}% del totale preventivo`
         };
       }) : undefined;
 
@@ -231,6 +311,89 @@ export default function QuoteForm({ quote, onSave, onCancel, projectId, phaseId 
                 </p>
               )}
             </div>
+
+            {/* Gestione Percentuali per Fasi Multiple - Layout Compatto */}
+            {formData.phaseIds.length > 1 && (
+              <div className="md:col-span-2">
+                <div className="border border-gray-200 rounded-lg p-3 bg-blue-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">
+                      Ripartizione Percentuale ({formData.phaseIds.length} fasi)
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={normalizePercentages}
+                      className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      title="Normalizza al 100%"
+                    >
+                      Normalizza
+                    </button>
+                  </div>
+
+                  {/* Container con scrolling per molte fasi */}
+                  <div className="max-h-60 overflow-y-auto space-y-2 mb-3">
+                    {formData.phaseIds.map(phaseId => {
+                      const phase = phases.find(p => p.id === phaseId);
+                      const percentage = phasePercentages[phaseId] || 0;
+                      const calculatedAmount = Math.round((formData.totalAmount * percentage) / 100 * 100) / 100;
+
+                      return (
+                        <div key={phaseId} className="flex items-center gap-2 p-2 bg-white rounded border text-xs">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">
+                              {phase?.name || 'Fase sconosciuta'}
+                            </div>
+                            <div className="text-gray-500">
+                              Budget: €{phase?.budget?.toLocaleString() || 'N/A'}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={percentage}
+                              onChange={(e) => updatePhasePercentage(phaseId, parseInt(e.target.value) || 0)}
+                              className="w-12 text-center px-1 py-1 border border-gray-300 rounded text-xs"
+                            />
+                            <span className="text-gray-600">%</span>
+                          </div>
+
+                          <div className="text-right min-w-[60px] flex-shrink-0">
+                            <div className="font-medium text-gray-900">
+                              €{calculatedAmount.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Riepilogo compatto */}
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-200 bg-white rounded px-3 py-2">
+                    <span className="text-sm font-medium text-gray-700">Totale:</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${
+                        getTotalPercentage() === 100 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {getTotalPercentage()}%
+                      </span>
+                      <span className="text-sm font-bold text-gray-900">
+                        €{formData.totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {getTotalPercentage() !== 100 && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                      ⚠️ Le percentuali devono sommare al 100%. Usa "Normalizza" per correggere.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

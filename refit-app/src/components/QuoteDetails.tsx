@@ -292,66 +292,87 @@ export default function QuoteDetails({ quote, onClose, onEdit, onApprove, onReje
                 </div>
               </div>
 
-              {/* Breakdown per Fasi (se multi-fase) */}
+              {/* Breakdown per Fasi (se multi-fase) - Layout Compatto */}
               {quote.phaseBreakdown && quote.phaseBreakdown.length > 0 && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                     <Building className="h-5 w-5 mr-2" />
-                    Breakdown per Fasi
+                    Breakdown per Fasi ({quote.phaseBreakdown.length})
                   </h3>
-                  <div className="space-y-4">
-                    {quote.phaseBreakdown.map((phaseBreakdown, index) => (
-                      <div key={phaseBreakdown.phaseId} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">
-                              Fase {index + 1}
-                            </span>
-                            {phaseBreakdown.phaseName}
-                          </h4>
-                          <div className="text-right">
-                            <div className="font-bold text-lg text-gray-900">
-                              €{phaseBreakdown.subtotal.toFixed(2)}
+
+                  {/* Container con scrolling per molte fasi */}
+                  <div className="max-h-96 overflow-y-auto border border-gray-200 rounded-lg bg-gray-50 p-3">
+                    <div className="space-y-3">
+                      {quote.phaseBreakdown.map((phaseBreakdown, index) => (
+                        <div key={phaseBreakdown.phaseId} className="bg-white border border-gray-100 rounded-md p-3 shadow-sm">
+                          {/* Header compatto della fase */}
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 flex-shrink-0">
+                                #{index + 1}
+                              </span>
+                              <h4 className="font-medium text-gray-900 text-sm truncate">
+                                {phaseBreakdown.phaseName}
+                              </h4>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {phaseBreakdown.items.length} voci
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <div className="font-bold text-base text-gray-900">
+                                €{phaseBreakdown.subtotal.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {phaseBreakdown.items.length} {phaseBreakdown.items.length === 1 ? 'voce' : 'voci'}
+                              </div>
                             </div>
                           </div>
+
+                          {/* Voci in formato compatto */}
+                          {phaseBreakdown.items.length > 0 && (
+                            <div className="space-y-1">
+                              {phaseBreakdown.items.map((item, itemIndex) => (
+                                <div key={itemIndex} className="flex justify-between items-center py-1 px-2 bg-gray-50 rounded text-xs">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="truncate font-medium text-gray-800">
+                                      {item.description}
+                                    </div>
+                                    <div className="text-gray-500">
+                                      {item.quantity} {item.unit} × €{item.unitPrice.toFixed(2)}
+                                    </div>
+                                  </div>
+                                  <div className="font-bold text-gray-900 ml-2">
+                                    €{item.totalPrice.toFixed(2)}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Note compatte */}
+                          {phaseBreakdown.notes && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded border-l-2 border-blue-200">
+                              <div className="text-xs text-blue-700">
+                                {phaseBreakdown.notes}
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      ))}
+                    </div>
 
-                        {phaseBreakdown.items.length > 0 && (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-gray-200">
-                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Descrizione</th>
-                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Q.tà</th>
-                                  <th className="text-left py-2 text-xs font-medium text-gray-500">Prezzo</th>
-                                  <th className="text-right py-2 text-xs font-medium text-gray-500">Totale</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {phaseBreakdown.items.map((item, itemIndex) => (
-                                  <tr key={itemIndex} className="border-b border-gray-100">
-                                    <td className="py-2">{item.description}</td>
-                                    <td className="py-2">{item.quantity} {item.unit}</td>
-                                    <td className="py-2">€{item.unitPrice.toFixed(2)}</td>
-                                    <td className="py-2 text-right font-medium">€{item.totalPrice.toFixed(2)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        {phaseBreakdown.notes && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                            <div className="text-xs font-medium text-gray-700 mb-1">Note per questa fase:</div>
-                            <div className="text-sm text-gray-600">{phaseBreakdown.notes}</div>
-                          </div>
-                        )}
+                    {/* Riepilogo totali */}
+                    <div className="mt-3 pt-3 border-t border-gray-300 bg-white rounded-md p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">
+                          Totale Breakdown Fasi:
+                        </span>
+                        <span className="text-lg font-bold text-gray-900">
+                          €{quote.phaseBreakdown.reduce((sum, phase) => sum + phase.subtotal, 0).toFixed(2)}
+                        </span>
                       </div>
-                    ))}
+                      <div className="text-xs text-gray-500 mt-1">
+                        {quote.phaseBreakdown.length} {quote.phaseBreakdown.length === 1 ? 'fase' : 'fasi'} •
+                        {quote.phaseBreakdown.reduce((sum, phase) => sum + phase.items.length, 0)} voci totali
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
