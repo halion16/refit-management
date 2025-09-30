@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   BarChart3,
   Building2,
@@ -12,11 +13,14 @@ import {
   Calendar,
   Camera,
   Euro,
-  CalendarCheck
+  CalendarCheck,
+  Kanban
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore, useCurrentView, useSidebarOpen, useSetCurrentView, useToggleSidebar } from '@/store';
 import { cn } from '@/lib/utils';
+import { useAppointments } from '@/hooks/useAppointments';
+import { useTasksEnhanced } from '@/hooks/useTasksEnhanced';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -55,6 +59,16 @@ export function Sidebar() {
   const setCurrentView = useSetCurrentView();
   const toggleSidebar = useToggleSidebar();
 
+  const { getTodayAppointments } = useAppointments();
+  const { getTasksByStatus } = useTasksEnhanced();
+
+  // Calculate badges
+  const todayAppointmentsCount = useMemo(() => getTodayAppointments().length, [getTodayAppointments]);
+  const urgentTasksCount = useMemo(() => {
+    const tasks = getTasksByStatus('pending').concat(getTasksByStatus('in_progress'));
+    return tasks.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
+  }, [getTasksByStatus]);
+
   const menuItems = [
     {
       view: 'dashboard',
@@ -92,6 +106,13 @@ export function Sidebar() {
       view: 'appointments',
       icon: <CalendarCheck className="h-5 w-5" />,
       label: 'Appuntamenti',
+      badge: todayAppointmentsCount
+    },
+    {
+      view: 'tasks',
+      icon: <Kanban className="h-5 w-5" />,
+      label: 'Task Board',
+      badge: urgentTasksCount
     },
     {
       view: 'reports',

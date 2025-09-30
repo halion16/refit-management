@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Debug LocalStorage</title>
+</head>
+<body>
+  <h1>Debug LocalStorage - Refit App</h1>
+  <div id="output"></div>
+  <script>
+    const output = document.getElementById('output');
+    const projectsKey = 'refit_projects';
+
+    const projects = localStorage.getItem(projectsKey);
+
+    if (projects) {
+      const parsed = JSON.parse(projects);
+      output.innerHTML = `
+        <h2>Progetti trovati: ${parsed.length}</h2>
+        <pre>${JSON.stringify(parsed, null, 2)}</pre>
+      `;
+    } else {
+      output.innerHTML = '<h2>Nessun progetto trovato in localStorage!</h2>';
+    }
+
+    // List all keys
+    output.innerHTML += '<h2>Tutte le chiavi in localStorage:</h2><ul>';
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      output.innerHTML += `<li>${key}</li>`;
+    }
+    output.innerHTML += '</ul>';
+  </script>
+</body>
+</html>

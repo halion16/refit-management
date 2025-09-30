@@ -9,6 +9,7 @@ import {
   Payment
 } from '@/types';
 import { sampleAppointments } from './sampleAppointments';
+import { sampleTasks } from './sampleTasks';
 
 // Utility per generare ID unici
 function generateId(): string {
@@ -862,6 +863,7 @@ export function initializeSampleData(): void {
       localStorage.setItem(STORAGE_KEYS.QUOTES, JSON.stringify(sampleQuotes));
       localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(sampleUsers));
       localStorage.setItem(STORAGE_KEYS.APPOINTMENTS, JSON.stringify(sampleAppointments));
+      localStorage.setItem(STORAGE_KEYS.TASKS_ENHANCED, JSON.stringify(sampleTasks));
 
       // Imposta utente corrente
       localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(sampleUsers[0]));

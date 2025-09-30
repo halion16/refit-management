@@ -9,6 +9,7 @@ import { Contractors } from '@/components/Contractors';
 import Quotes from '@/components/Quotes';
 import { Calendar } from '@/components/Calendar';
 import { AppointmentList } from '@/components/AppointmentList';
+import { TaskBoard } from '@/components/TaskBoard';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -51,6 +52,8 @@ export default function Home() {
         return <Calendar />;
       case 'appointments':
         return <AppointmentList />;
+      case 'tasks':
+        return <TaskBoard />;
       case 'settings':
         return (
           <div>

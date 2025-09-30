@@ -97,6 +97,15 @@ export function useTasksEnhanced(): UseTasksEnhancedReturn {
 
   // Add task
   const addTask = useCallback(async (taskData: Omit<TaskEnhanced, 'id'>) => {
+    // Validate required fields
+    if (!taskData.projectId) {
+      throw new Error('Il progetto è obbligatorio per creare un task');
+    }
+
+    if (!taskData.title?.trim()) {
+      throw new Error('Il titolo del task è obbligatorio');
+    }
+
     const newTask: TaskEnhanced = {
       ...taskData,
       id: generateId(),

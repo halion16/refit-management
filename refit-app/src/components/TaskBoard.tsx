@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Search, Filter, GripVertical, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { TaskEnhanced, TaskStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { TaskForm } from './TaskForm';
 import { useTasksEnhanced } from '@/hooks/useTasksEnhanced';
 import { useProjects } from '@/hooks/useProjects';
 
@@ -33,15 +34,18 @@ export function TaskBoard() {
   const {
     tasks,
     loading,
+    addTask,
     updateTask,
   } = useTasksEnhanced();
 
-  const { projects = [] } = useProjects();
+  const { data: projects = [] } = useProjects();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterProject, setFilterProject] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [draggedTask, setDraggedTask] = useState<TaskEnhanced | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskEnhanced | undefined>();
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -135,6 +139,16 @@ export function TaskBoard() {
     );
   }
 
+  const handleSave = async (taskData: Omit<TaskEnhanced, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingTask) {
+      await updateTask(editingTask.id, taskData);
+    } else {
+      await addTask(taskData);
+    }
+    setShowForm(false);
+    setEditingTask(undefined);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -145,6 +159,16 @@ export function TaskBoard() {
             {filteredTasks.length} task in totale
           </p>
         </div>
+        <Button
+          variant="primary"
+          onClick={() => {
+            setEditingTask(undefined);
+            setShowForm(true);
+          }}
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nuovo Task
+        </Button>
       </div>
 
       {/* Filters */}
@@ -231,7 +255,11 @@ export function TaskBoard() {
                       key={task.id}
                       draggable
                       onDragStart={() => handleDragStart(task)}
-                      className={`bg-white rounded-lg border-l-4 ${priorityColors[task.priority]} p-3 shadow-sm hover:shadow-md transition-shadow cursor-move`}
+                      onClick={() => {
+                        setEditingTask(task);
+                        setShowForm(true);
+                      }}
+                      className={`bg-white rounded-lg border-l-4 ${priorityColors[task.priority]} p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
                     >
                       {/* Priority Badge */}
                       <div className="flex items-center justify-between mb-2">
@@ -326,6 +354,18 @@ export function TaskBoard() {
           </div>
         ))}
       </div>
+
+      {/* Task Form Modal */}
+      {showForm && (
+        <TaskForm
+          task={editingTask}
+          onSave={handleSave}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingTask(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }
