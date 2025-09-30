@@ -568,3 +568,79 @@ export interface TaskTemplate {
   phaseType?: string; // Tipo di fase
   createdAt: string;
 }
+
+// ============================================================================
+// TEAM MANAGEMENT TYPES
+// ============================================================================
+
+export type TeamMemberRole = 'manager' | 'coordinator' | 'technician' | 'contractor' | 'viewer';
+export type TeamMemberStatus = 'active' | 'inactive' | 'vacation';
+
+export type Permission =
+  | 'view_projects'
+  | 'edit_projects'
+  | 'delete_projects'
+  | 'manage_team'
+  | 'manage_budget'
+  | 'manage_documents'
+  | 'manage_tasks'
+  | 'view_reports'
+  | 'edit_settings';
+
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: TeamMemberRole;
+  department?: string;
+  skills: string[]; // 'electrical', 'plumbing', 'carpentry', 'painting', etc.
+  availability: {
+    hoursPerWeek: number;
+    vacation?: { start: string; end: string }[];
+  };
+  workload: {
+    currentTasks: number;
+    totalHours: number;
+    utilizationRate: number; // 0-100%
+  };
+  performance: {
+    tasksCompleted: number;
+    onTimeCompletion: number; // percentage 0-100
+    averageRating: number; // 1-5
+  };
+  contacts: {
+    phone?: string;
+    mobile?: string;
+  };
+  status: TeamMemberStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamRole {
+  id: string;
+  name: string;
+  permissions: Permission[];
+  canAssignTasks: boolean;
+  canEditBudget: boolean;
+  canDeleteProjects: boolean;
+  canManageTeam: boolean;
+  color: string; // For UI visualization
+}
+
+export interface TeamMemberActivity {
+  id: string;
+  memberId: string;
+  type: 'task_completed' | 'task_assigned' | 'project_joined' | 'comment_added' | 'document_uploaded';
+  description: string;
+  metadata?: Record<string, any>;
+  timestamp: string;
+}
+
+// Storage keys for team data
+export const TEAM_STORAGE_KEYS = {
+  MEMBERS: 'refit_team_members',
+  ROLES: 'refit_team_roles',
+  ACTIVITY: 'refit_team_activity',
+} as const;

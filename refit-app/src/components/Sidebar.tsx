@@ -14,7 +14,8 @@ import {
   Camera,
   Euro,
   CalendarCheck,
-  Kanban
+  Kanban,
+  UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore, useCurrentView, useSidebarOpen, useSetCurrentView, useToggleSidebar } from '@/store';
@@ -90,6 +91,11 @@ export function Sidebar() {
       view: 'contractors',
       icon: <Users className="h-5 w-5" />,
       label: 'Fornitori',
+    },
+    {
+      view: 'team',
+      icon: <UsersRound className="h-5 w-5" />,
+      label: 'Team',
     },
     {
       view: 'quotes',

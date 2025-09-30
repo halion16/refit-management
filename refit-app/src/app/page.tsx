@@ -10,6 +10,7 @@ import Quotes from '@/components/Quotes';
 import { Calendar } from '@/components/Calendar';
 import { AppointmentList } from '@/components/AppointmentList';
 import { TaskBoard } from '@/components/TaskBoard';
+import { TeamDirectory } from '@/components/Team/TeamDirectory';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -46,6 +47,8 @@ export default function Home() {
         return <Projects />;
       case 'contractors':
         return <Contractors />;
+      case 'team':
+        return <TeamDirectory />;
       case 'quotes':
         return <Quotes />;
       case 'calendar':
