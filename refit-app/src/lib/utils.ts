@@ -12,8 +12,11 @@ export function formatCurrency(amount: number, currency = 'EUR'): string {
   }).format(amount);
 }
 
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('it-IT').format(new Date(date));
+export function formatDate(date: string | Date | undefined): string {
+  if (!date) return 'N/A';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return 'N/A';
+  return new Intl.DateTimeFormat('it-IT').format(d);
 }
 
 export function formatDateTime(date: string | Date): string {

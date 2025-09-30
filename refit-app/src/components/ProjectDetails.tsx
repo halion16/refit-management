@@ -19,7 +19,15 @@ import {
   Camera,
   Edit,
   Plus,
-  ListTodo
+  ListTodo,
+  Timer,
+  DollarSign,
+  Activity,
+  Zap,
+  Flag,
+  UserCheck,
+  Bell,
+  TrendingDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProjectPhases } from '@/components/ProjectPhases';
@@ -45,6 +53,7 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
   const [newMemberName, setNewMemberName] = useState('');
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskEnhanced | undefined>();
+  const [timelineView, setTimelineView] = useState<'gantt' | 'chronological'>('gantt');
 
   const { getTasksByProject, addTask, updateTask, deleteTask } = useTasksEnhanced();
   const projectTasks = getTasksByProject(project.id, project.phases);
@@ -294,66 +303,398 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
 
         {/* Content */}
         <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 300px)' }}>
-          {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Project Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Informazioni Generali</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <span className="w-24 text-sm text-gray-600">Tipo:</span>
-                      <span className="text-sm font-medium text-gray-900 capitalize">{project.type}</span>
+{activeTab === 'overview' && (() => {
+            // Calculate KPIs
+            const totalTasks = projectTasks.length;
+            const completedTasks = projectTasks.filter(t => t.status === 'completed').length;
+            const tasksProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            const totalEstimatedHours = projectTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
+            const totalActualHours = projectTasks.reduce((sum, t) => sum + (t.actualHours || 0), 0);
+
+            const budgetUsed = project.budget.spent;
+            const budgetRemaining = project.budget.approved - budgetUsed;
+            const budgetProgress = Math.round((budgetUsed / project.budget.approved) * 100);
+
+            const today = new Date();
+            const endDate = project.dates.endDate ? new Date(project.dates.endDate) : null;
+            const daysRemaining = endDate ? Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+            const overdueTasks = projectTasks.filter(t =>
+              t.status !== 'completed' && t.dueDate && new Date(t.dueDate) < today
+            );
+
+            const blockedTasks = projectTasks.filter(t => t.blockedBy && t.blockedBy.length > 0);
+            const urgentTasks = projectTasks.filter(t =>
+              (t.priority === 'urgent' || t.priority === 'high') && t.status !== 'completed'
+            );
+
+            const completedPhases = project.phases.filter(p => p.status === 'completed').length;
+            const phasesProgress = Math.round((completedPhases / project.phases.length) * 100);
+
+            const isOnSchedule = daysRemaining >= 0;
+            const isBudgetOk = budgetProgress <= 100;
+
+            return (
+              <div className="space-y-6">
+                {/* KPI Cards - Top Row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Project Progress */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-900">Progresso</span>
+                      </div>
+                      <span className="text-2xl font-bold text-blue-600">{tasksProgress}%</span>
                     </div>
-                    <div className="flex items-center">
-                      <span className="w-24 text-sm text-gray-600">Manager:</span>
-                      <span className="text-sm font-medium text-gray-900">{project.projectManager}</span>
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{ width: `${tasksProgress}%` }}
+                      />
                     </div>
-                    <div className="flex items-center">
-                      <span className="w-24 text-sm text-gray-600">Creato:</span>
-                      <span className="text-sm font-medium text-gray-900">{formatDate(project.dates.createdAt)}</span>
+                    <div className="text-xs text-blue-700 mt-2">
+                      {completedTasks}/{totalTasks} task completati
                     </div>
-                    <div className="flex items-center">
-                      <span className="w-24 text-sm text-gray-600">Aggiornato:</span>
-                      <span className="text-sm font-medium text-gray-900">{formatDate(project.dates.updatedAt)}</span>
+                  </div>
+
+                  {/* Budget */}
+                  <div className={`rounded-lg p-4 border ${
+                    budgetProgress > 100
+                      ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
+                      : budgetProgress > 80
+                      ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200'
+                      : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className={`h-5 w-5 ${
+                          budgetProgress > 100 ? 'text-red-600' : budgetProgress > 80 ? 'text-yellow-600' : 'text-green-600'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          budgetProgress > 100 ? 'text-red-900' : budgetProgress > 80 ? 'text-yellow-900' : 'text-green-900'
+                        }`}>Budget</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${
+                        budgetProgress > 100 ? 'text-red-600' : budgetProgress > 80 ? 'text-yellow-600' : 'text-green-600'
+                      }`}>{budgetProgress}%</span>
                     </div>
+                    <div className={`w-full rounded-full h-2 ${
+                      budgetProgress > 100 ? 'bg-red-200' : budgetProgress > 80 ? 'bg-yellow-200' : 'bg-green-200'
+                    }`}>
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          budgetProgress > 100 ? 'bg-red-600' : budgetProgress > 80 ? 'bg-yellow-600' : 'bg-green-600'
+                        }`}
+                        style={{ width: `${Math.min(budgetProgress, 100)}%` }}
+                      />
+                    </div>
+                    <div className={`text-xs mt-2 ${
+                      budgetProgress > 100 ? 'text-red-700' : budgetProgress > 80 ? 'text-yellow-700' : 'text-green-700'
+                    }`}>
+                      {formatCurrency(budgetRemaining)} rimanenti
+                    </div>
+                  </div>
+
+                  {/* Time Remaining */}
+                  <div className={`rounded-lg p-4 border ${
+                    daysRemaining < 0
+                      ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200'
+                      : daysRemaining < 7
+                      ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200'
+                      : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'
+                  }`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className={`h-5 w-5 ${
+                          daysRemaining < 0 ? 'text-red-600' : daysRemaining < 7 ? 'text-yellow-600' : 'text-purple-600'
+                        }`} />
+                        <span className={`text-sm font-medium ${
+                          daysRemaining < 0 ? 'text-red-900' : daysRemaining < 7 ? 'text-yellow-900' : 'text-purple-900'
+                        }`}>Scadenza</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${
+                        daysRemaining < 0 ? 'text-red-600' : daysRemaining < 7 ? 'text-yellow-600' : 'text-purple-600'
+                      }`}>
+                        {Math.abs(daysRemaining)}
+                      </span>
+                    </div>
+                    <div className={`text-xs mt-2 ${
+                      daysRemaining < 0 ? 'text-red-700' : daysRemaining < 7 ? 'text-yellow-700' : 'text-purple-700'
+                    }`}>
+                      {daysRemaining < 0 ? 'Giorni di ritardo' : 'Giorni rimanenti'}
+                    </div>
+                    <div className={`text-xs ${
+                      daysRemaining < 0 ? 'text-red-600' : daysRemaining < 7 ? 'text-yellow-600' : 'text-purple-600'
+                    }`}>
+                      {endDate ? formatDate(project.dates.endDate) : 'Data non impostata'}
+                    </div>
+                  </div>
+
+                  {/* Hours Worked */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Timer className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-indigo-900">Ore Lavorate</span>
+                      </div>
+                      <span className="text-2xl font-bold text-indigo-600">{totalActualHours}</span>
+                    </div>
+                    <div className="text-xs text-indigo-700 mt-2">
+                      su {totalEstimatedHours}h stimate
+                    </div>
+                    {totalEstimatedHours > 0 && (
+                      <div className="w-full bg-indigo-200 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
+                          style={{ width: `${Math.min((totalActualHours / totalEstimatedHours) * 100, 100)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Location</h3>
-                  {location ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center mb-2">
-                        <Building2 className="h-5 w-5 text-blue-600 mr-2" />
-                        <span className="font-medium text-gray-900">{location.name}</span>
-                      </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <MapPin className="h-4 w-4 mr-2" />
-                          <span>{location.address.street}, {location.address.city}</span>
+                {/* Alerts Row */}
+                {(overdueTasks.length > 0 || blockedTasks.length > 0 || urgentTasks.length > 0 || !isOnSchedule || !isBudgetOk) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bell className="h-5 w-5 text-amber-600" />
+                      <h3 className="font-semibold text-amber-900">Attenzione Richiesta</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {overdueTasks.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-gray-700">{overdueTasks.length} task in ritardo</span>
                         </div>
-                        <div>Superficie: {location.surface} mq</div>
-                        <div>Manager: {location.manager}</div>
+                      )}
+                      {blockedTasks.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <PauseCircle className="h-4 w-4 text-orange-600" />
+                          <span className="text-gray-700">{blockedTasks.length} task bloccati</span>
+                        </div>
+                      )}
+                      {urgentTasks.length > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Zap className="h-4 w-4 text-yellow-600" />
+                          <span className="text-gray-700">{urgentTasks.length} task urgenti</span>
+                        </div>
+                      )}
+                      {!isOnSchedule && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                          <span className="text-gray-700">Progetto in ritardo</span>
+                        </div>
+                      )}
+                      {!isBudgetOk && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <AlertCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-gray-700">Budget superato</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Two Columns Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-6">
+                    {/* Project Status */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-blue-600" />
+                        Stato Progetto
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">Fasi Completate</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {completedPhases}/{project.phases.length} ({phasesProgress}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all"
+                            style={{ width: `${phasesProgress}%` }}
+                          />
+                        </div>
+                        <div className="pt-2 space-y-2">
+                          {project.phases.slice(0, 3).map(phase => {
+                            const phaseTasks = projectTasks.filter(t => t.phaseId === phase.id);
+                            const completed = phaseTasks.filter(t => t.status === 'completed').length;
+                            const progress = phaseTasks.length > 0 ? Math.round((completed / phaseTasks.length) * 100) : 0;
+
+                            return (
+                              <div key={phase.id} className="flex items-center justify-between text-sm">
+                                <span className="text-gray-700 truncate flex-1">🔨 {phase.name}</span>
+                                <span className="text-gray-600 ml-2">{progress}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">Location non trovata</div>
-                  )}
+
+                    {/* Team & Workload */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Users className="h-5 w-5 text-green-600" />
+                        Team
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">{project.projectManager}</span>
+                            <span className="text-xs text-gray-500">(Manager)</span>
+                          </div>
+                          <span className="text-xs text-gray-600">
+                            {projectTasks.filter(t => t.assignee === project.projectManager).length} task
+                          </span>
+                        </div>
+                        {project.team.map(member => {
+                          const memberTasks = projectTasks.filter(t => t.assignee === member);
+                          return (
+                            <div key={member} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm">{member}</span>
+                              </div>
+                              <span className="text-xs text-gray-600">{memberTasks.length} task</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Project Info */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                        Informazioni
+                      </h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Tipo</span>
+                          <span className="font-medium capitalize">{project.type}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Creato</span>
+                          <span className="font-medium">{formatDate(project.dates.createdAt)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-600">Aggiornato</span>
+                          <span className="font-medium">{formatDate(project.dates.updatedAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-6">
+                    {/* Location */}
+                    {location && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-indigo-600" />
+                          Location
+                        </h3>
+                        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4">
+                          <div className="flex items-center mb-3">
+                            <span className="font-medium text-indigo-900">{location.name}</span>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-4 w-4 text-indigo-600 mt-0.5" />
+                              <span className="text-indigo-800">{location.address.street}, {location.address.city}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Target className="h-4 w-4 text-indigo-600" />
+                              <span className="text-indigo-800">Superficie: {location.surface} mq</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="h-4 w-4 text-indigo-600" />
+                              <span className="text-indigo-800">Manager: {location.manager}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Urgent Tasks */}
+                    {urgentTasks.length > 0 && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Flag className="h-5 w-5 text-red-600" />
+                          Task Urgenti
+                        </h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {urgentTasks.slice(0, 5).map(task => (
+                            <div key={task.id} className="p-2 bg-red-50 border border-red-200 rounded text-sm">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-red-900 truncate flex-1">{task.title}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded ml-2 ${
+                                  task.priority === 'urgent'
+                                    ? 'bg-red-200 text-red-800'
+                                    : 'bg-orange-200 text-orange-800'
+                                }`}>
+                                  {task.priority === 'urgent' ? 'Urgente' : 'Alta'}
+                                </span>
+                              </div>
+                              {task.dueDate && (
+                                <div className="text-xs text-red-700 mt-1">
+                                  Scadenza: {formatDate(task.dueDate)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Overdue Tasks */}
+                    {overdueTasks.length > 0 && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 text-red-600" />
+                          Task in Ritardo
+                        </h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {overdueTasks.slice(0, 5).map(task => (
+                            <div key={task.id} className="p-2 bg-red-50 border border-red-200 rounded text-sm">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-red-900 truncate flex-1">{task.title}</span>
+                              </div>
+                              {task.dueDate && (
+                                <div className="text-xs text-red-700 mt-1">
+                                  Scaduto il: {formatDate(task.dueDate)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {project.notes && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-gray-600" />
+                          Note
+                        </h3>
+                        <div className="bg-gray-50 rounded p-3 text-sm text-gray-700">
+                          {project.notes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* Notes */}
-              {project.notes && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Note</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-700">{project.notes}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'phases' && (
             <ProjectPhases
@@ -445,107 +786,364 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
             </div>
           )}
 
-          {activeTab === 'timeline' && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Timeline Progetto</h3>
+{activeTab === 'timeline' && (() => {
+            const projectStart = project.dates.startPlanned ? new Date(project.dates.startPlanned) : new Date();
+            const projectEnd = project.dates.endPlanned ? new Date(project.dates.endPlanned) : new Date();
+            const totalDays = Math.max(1, Math.ceil((projectEnd.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24)));
+            const today = new Date();
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="text-md font-medium text-gray-900">Date Pianificate</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-blue-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Inizio Pianificato</p>
-                        <p className="text-sm text-gray-600">{formatDate(project.dates.startPlanned)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-blue-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Fine Pianificata</p>
-                        <p className="text-sm text-gray-600">{formatDate(project.dates.endPlanned)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 text-gray-500 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Durata Pianificata</p>
-                        <p className="text-sm text-gray-600">{duration} giorni</p>
-                      </div>
-                    </div>
+            // Calculate position of today marker
+            const todayPosition = ((today.getTime() - projectStart.getTime()) / (projectEnd.getTime() - projectStart.getTime())) * 100;
+
+            return (
+              <div className="space-y-6">
+                {/* Header with View Switcher */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Timeline Progetto</h3>
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setTimelineView('gantt')}
+                      className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                        timelineView === 'gantt'
+                          ? 'bg-white text-blue-600 shadow'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Vista Gantt
+                    </button>
+                    <button
+                      onClick={() => setTimelineView('chronological')}
+                      className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                        timelineView === 'chronological'
+                          ? 'bg-white text-blue-600 shadow'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Vista Cronologica
+                    </button>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-md font-medium text-gray-900">Date Effettive</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-green-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Inizio Effettivo</p>
-                        <p className="text-sm text-gray-600">
-                          {project.dates.startActual ? formatDate(project.dates.startActual) : 'Non ancora iniziato'}
-                        </p>
-                      </div>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">Inizio Pianificato</span>
                     </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-green-600 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Fine Effettiva</p>
-                        <p className="text-sm text-gray-600">
-                          {project.dates.endActual ? formatDate(project.dates.endActual) : 'Non ancora completato'}
-                        </p>
+                    <div className="text-lg font-bold text-blue-600">{formatDate(project.dates.startPlanned)}</div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-900">Fine Pianificata</span>
+                    </div>
+                    <div className="text-lg font-bold text-purple-600">{formatDate(project.dates.endPlanned)}</div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-900">Durata Totale</span>
+                    </div>
+                    <div className="text-lg font-bold text-green-600">{totalDays} giorni</div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg p-4 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-amber-600" />
+                      <span className="text-sm font-medium text-amber-900">Fasi Totali</span>
+                    </div>
+                    <div className="text-lg font-bold text-amber-600">{project.phases.length}</div>
+                  </div>
+                </div>
+
+                {/* Gantt View */}
+                {timelineView === 'gantt' && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="space-y-4">
+                      {/* Timeline Header */}
+                      <div className="flex items-center mb-6">
+                        <div className="w-48 flex-shrink-0">
+                          <span className="text-sm font-semibold text-gray-700">Fase</span>
+                        </div>
+                        <div className="flex-1 relative">
+                          <div className="flex justify-between text-xs text-gray-500 mb-2">
+                            <span>{formatDate(projectStart)}</span>
+                            <span>Oggi</span>
+                            <span>{formatDate(projectEnd)}</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded relative">
+                            {/* Today marker */}
+                            {todayPosition >= 0 && todayPosition <= 100 && (
+                              <div
+                                className="absolute top-0 bottom-0 w-0.5 bg-red-500"
+                                style={{ left: `${todayPosition}%` }}
+                              >
+                                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-red-500 rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phases Gantt Bars */}
+                      {project.phases.map((phase, index) => {
+                        const phaseStart = phase.dates?.startPlanned ? new Date(phase.dates.startPlanned) : projectStart;
+                        const phaseEnd = phase.dates?.endPlanned ? new Date(phase.dates.endPlanned) : projectEnd;
+
+                        const startOffset = ((phaseStart.getTime() - projectStart.getTime()) / (projectEnd.getTime() - projectStart.getTime())) * 100;
+                        const phaseDuration = ((phaseEnd.getTime() - phaseStart.getTime()) / (projectEnd.getTime() - projectStart.getTime())) * 100;
+
+                        const statusColors: Record<string, string> = {
+                          planning: 'bg-gray-400',
+                          active: 'bg-blue-500',
+                          completed: 'bg-green-500',
+                          on_hold: 'bg-yellow-500',
+                          delayed: 'bg-red-500',
+                        };
+
+                        const phaseTasks = projectTasks.filter(t => t.phaseId === phase.id);
+                        const completedTasks = phaseTasks.filter(t => t.status === 'completed').length;
+                        const progress = phaseTasks.length > 0 ? (completedTasks / phaseTasks.length) * 100 : 0;
+                        const phaseColor = statusColors[phase.status] || statusColors.planning;
+
+                        return (
+                          <div key={phase.id} className="flex items-center group hover:bg-gray-50 p-2 rounded transition-colors">
+                            <div className="w-48 flex-shrink-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">{phase.name}</div>
+                              <div className="text-xs text-gray-500">{Math.ceil((phaseEnd.getTime() - phaseStart.getTime()) / (1000 * 60 * 60 * 24))} giorni</div>
+                            </div>
+                            <div className="flex-1 relative h-12 flex items-center">
+                              <div className="absolute inset-0 h-8 bg-gray-50 rounded"></div>
+                              <div
+                                className="absolute h-8 rounded shadow-sm transition-all hover:shadow-md cursor-pointer"
+                                style={{
+                                  left: `${Math.max(0, startOffset)}%`,
+                                  width: `${Math.min(100 - Math.max(0, startOffset), phaseDuration)}%`,
+                                }}
+                              >
+                                {/* Background bar */}
+                                <div className={`h-full rounded ${phaseColor} opacity-30`}></div>
+
+                                {/* Progress bar */}
+                                <div
+                                  className={`absolute top-0 left-0 h-full rounded ${phaseColor}`}
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+
+                                {/* Phase info tooltip */}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-xs font-medium text-white drop-shadow">
+                                    {Math.round(progress)}%
+                                  </span>
+                                </div>
+
+                                {/* Hover tooltip */}
+                                <div className="absolute hidden group-hover:block bottom-full left-0 mb-2 p-2 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10">
+                                  <div className="font-semibold">{phase.name}</div>
+                                  <div>Inizio: {formatDate(phaseStart)}</div>
+                                  <div>Fine: {formatDate(phaseEnd)}</div>
+                                  <div>Progresso: {Math.round(progress)}%</div>
+                                  <div>Task: {completedTasks}/{phaseTasks.length}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center gap-6 text-xs">
+                        <span className="font-semibold text-gray-700">Legenda:</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-gray-400 rounded"></div>
+                          <span className="text-gray-600">Planning</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                          <span className="text-gray-600">In Corso</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-green-500 rounded"></div>
+                          <span className="text-gray-600">Completato</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                          <span className="text-gray-600">In Attesa</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-red-500 rounded"></div>
+                          <span className="text-gray-600">Ritardo</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-0.5 h-4 bg-red-500"></div>
+                          <span className="text-gray-600">Oggi</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Chronological View */}
+                {timelineView === 'chronological' && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <div className="relative">
+                      {/* Vertical line */}
+                      <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gray-300"></div>
+
+                      <div className="space-y-8">
+                        {/* Project Start */}
+                        <div className="relative flex items-start">
+                          <div className="flex-shrink-0 w-16 flex flex-col items-center">
+                            <div className="w-4 h-4 bg-blue-500 rounded-full ring-4 ring-blue-100"></div>
+                          </div>
+                          <div className="flex-1 ml-4 pb-8">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                              <div className="flex items-center gap-2 mb-2">
+                                <PlayCircle className="h-5 w-5 text-blue-600" />
+                                <h4 className="font-semibold text-blue-900">Inizio Progetto</h4>
+                              </div>
+                              <p className="text-sm text-blue-700">{formatDate(project.dates.startPlanned)}</p>
+                              <p className="text-xs text-blue-600 mt-1">Durata totale: {totalDays} giorni</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Phases */}
+                        {project.phases.map((phase, index) => {
+                          const statusIcons = {
+                            planning: Clock,
+                            active: PlayCircle,
+                            completed: CheckCircle,
+                            on_hold: PauseCircle,
+                            delayed: AlertCircle,
+                          };
+
+                          const statusColors = {
+                            planning: { bg: 'from-gray-50 to-gray-100', border: 'border-gray-200', text: 'text-gray-900', icon: 'text-gray-600' },
+                            active: { bg: 'from-blue-50 to-blue-100', border: 'border-blue-200', text: 'text-blue-900', icon: 'text-blue-600' },
+                            completed: { bg: 'from-green-50 to-green-100', border: 'border-green-200', text: 'text-green-900', icon: 'text-green-600' },
+                            on_hold: { bg: 'from-yellow-50 to-yellow-100', border: 'border-yellow-200', text: 'text-yellow-900', icon: 'text-yellow-600' },
+                            delayed: { bg: 'from-red-50 to-red-100', border: 'border-red-200', text: 'text-red-900', icon: 'text-red-600' },
+                          };
+
+                          const Icon = statusIcons[phase.status] || Clock;
+                          const colors = statusColors[phase.status] || statusColors.planning;
+
+                          const phaseTasks = projectTasks.filter(t => t.phaseId === phase.id);
+                          const completedTasks = phaseTasks.filter(t => t.status === 'completed').length;
+
+                          return (
+                            <div key={phase.id} className="relative flex items-start">
+                              <div className="flex-shrink-0 w-16 flex flex-col items-center">
+                                <div className={`w-4 h-4 rounded-full ring-4 ${
+                                  phase.status === 'completed' ? 'bg-green-500 ring-green-100' :
+                                  phase.status === 'active' ? 'bg-blue-500 ring-blue-100' :
+                                  phase.status === 'delayed' ? 'bg-red-500 ring-red-100' :
+                                  phase.status === 'on_hold' ? 'bg-yellow-500 ring-yellow-100' :
+                                  'bg-gray-400 ring-gray-100'
+                                }`}></div>
+                              </div>
+                              <div className="flex-1 ml-4 pb-8">
+                                <div className={`bg-gradient-to-br ${colors.bg} rounded-lg p-4 border ${colors.border}`}>
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Icon className={`h-5 w-5 ${colors.icon}`} />
+                                      <h4 className={`font-semibold ${colors.text}`}>{phase.name}</h4>
+                                    </div>
+                                    <span className={`text-xs px-2 py-1 rounded ${colors.bg} ${colors.border} border`}>
+                                      {phase.status === 'planning' ? 'Pianificazione' :
+                                       phase.status === 'active' ? 'In Corso' :
+                                       phase.status === 'completed' ? 'Completata' :
+                                       phase.status === 'on_hold' ? 'In Attesa' :
+                                       'In Ritardo'}
+                                    </span>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                                    <div>
+                                      <span className="text-gray-600">Inizio:</span>
+                                      <span className="ml-2 font-medium">{formatDate(phase.dates?.startPlanned)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">Fine:</span>
+                                      <span className="ml-2 font-medium">{formatDate(phase.dates?.endPlanned)}</span>
+                                    </div>
+                                  </div>
+
+                                  {phaseTasks.length > 0 && (
+                                    <div>
+                                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                        <span>Task: {completedTasks}/{phaseTasks.length}</span>
+                                        <span>{Math.round((completedTasks / phaseTasks.length) * 100)}%</span>
+                                      </div>
+                                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div
+                                          className={`h-1.5 rounded-full ${
+                                            phase.status === 'completed' ? 'bg-green-500' :
+                                            phase.status === 'active' ? 'bg-blue-500' :
+                                            'bg-gray-400'
+                                          }`}
+                                          style={{ width: `${(completedTasks / phaseTasks.length) * 100}%` }}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Project End */}
+                        <div className="relative flex items-start">
+                          <div className="flex-shrink-0 w-16 flex flex-col items-center">
+                            <div className={`w-4 h-4 rounded-full ring-4 ${
+                              project.dates.endActual
+                                ? 'bg-green-500 ring-green-100'
+                                : 'bg-gray-300 ring-gray-100'
+                            }`}></div>
+                          </div>
+                          <div className="flex-1 ml-4">
+                            <div className={`bg-gradient-to-br rounded-lg p-4 border ${
+                              project.dates.endActual
+                                ? 'from-green-50 to-green-100 border-green-200'
+                                : 'from-gray-50 to-gray-100 border-gray-200'
+                            }`}>
+                              <div className="flex items-center gap-2 mb-2">
+                                {project.dates.endActual ? (
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                  <Target className="h-5 w-5 text-gray-600" />
+                                )}
+                                <h4 className={`font-semibold ${
+                                  project.dates.endActual ? 'text-green-900' : 'text-gray-900'
+                                }`}>
+                                  {project.dates.endActual ? 'Progetto Completato' : 'Completamento Previsto'}
+                                </h4>
+                              </div>
+                              <p className={`text-sm ${
+                                project.dates.endActual ? 'text-green-700' : 'text-gray-700'
+                              }`}>
+                                {project.dates.endActual
+                                  ? formatDate(project.dates.endActual)
+                                  : formatDate(project.dates.endPlanned)
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Timeline Visualization */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="text-md font-medium text-gray-900 mb-4">Visualizzazione Timeline</h4>
-                <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300"></div>
-                  <div className="space-y-6">
-                    <div className="relative flex items-center">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Progetto Creato</p>
-                        <p className="text-sm text-gray-600">{formatDate(project.dates.createdAt)}</p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-center">
-                      <div className={`flex-shrink-0 w-8 h-8 ${project.dates.startActual ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex items-center justify-center`}>
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Inizio Lavori</p>
-                        <p className="text-sm text-gray-600">
-                          {project.dates.startActual ? formatDate(project.dates.startActual) : 'In attesa di inizio'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="relative flex items-center">
-                      <div className={`flex-shrink-0 w-8 h-8 ${project.dates.endActual ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex items-center justify-center`}>
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">Completamento</p>
-                        <p className="text-sm text-gray-600">
-                          {project.dates.endActual ? formatDate(project.dates.endActual) : `Previsto: ${formatDate(project.dates.endPlanned)}`}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'team' && (
             <div className="space-y-6">
