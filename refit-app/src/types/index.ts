@@ -644,3 +644,62 @@ export const TEAM_STORAGE_KEYS = {
   ROLES: 'refit_team_roles',
   ACTIVITY: 'refit_team_activity',
 } as const;
+
+// ============================================================================
+// NOTIFICATION SYSTEM TYPES
+// ============================================================================
+
+export type NotificationType =
+  | 'task_assigned'
+  | 'task_completed'
+  | 'task_overdue'
+  | 'project_update'
+  | 'deadline_approaching'
+  | 'budget_alert'
+  | 'team_mention'
+  | 'document_uploaded'
+  | 'comment_added'
+  | 'appointment_reminder'
+  | 'system';
+
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  read: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+  metadata?: {
+    projectId?: string;
+    taskId?: string;
+    userId?: string;
+    documentId?: string;
+    [key: string]: any;
+  };
+  createdAt: string;
+  readAt?: string;
+}
+
+export interface NotificationPreferences {
+  email: boolean;
+  push: boolean;
+  inApp: boolean;
+  types: {
+    [K in NotificationType]: boolean;
+  };
+  quietHours?: {
+    enabled: boolean;
+    start: string; // HH:mm format
+    end: string;   // HH:mm format
+  };
+}
+
+export const NOTIFICATION_STORAGE_KEYS = {
+  NOTIFICATIONS: 'refit_notifications',
+  PREFERENCES: 'refit_notification_preferences',
+  LAST_CHECK: 'refit_notifications_last_check',
+} as const;
