@@ -11,7 +11,8 @@ import {
   Home,
   Calendar,
   Camera,
-  Euro
+  Euro,
+  CalendarCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore, useCurrentView, useSidebarOpen, useSetCurrentView, useToggleSidebar } from '@/store';
@@ -88,6 +89,11 @@ export function Sidebar() {
       label: 'Calendario',
     },
     {
+      view: 'appointments',
+      icon: <CalendarCheck className="h-5 w-5" />,
+      label: 'Appuntamenti',
+    },
+    {
       view: 'reports',
       icon: <BarChart3 className="h-5 w-5" />,
       label: 'Report',
@@ -133,7 +139,7 @@ export function Sidebar() {
                 <Building2 className="h-5 w-5 text-white" />
               </div>
               <span className="ml-2 text-lg font-semibold text-gray-900">
-                Bds Project Manager
+                BDS Project Manager
               </span>
             </div>
             <Button
@@ -147,7 +153,7 @@ export function Sidebar() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <div className="mb-4">
               <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Principale

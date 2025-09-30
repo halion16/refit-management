@@ -378,7 +378,10 @@ export const STORAGE_KEYS = {
   APP_SETTINGS: 'refit_app_settings',
   BACKUP_DATA: 'refit_backup',
   PAYMENT_TEMPLATES: 'refit_payment_templates',
-  PAYMENTS: 'refit_payments'
+  PAYMENTS: 'refit_payments',
+  APPOINTMENTS: 'refit_appointments',
+  TASKS_ENHANCED: 'refit_tasks_enhanced',
+  TASK_TEMPLATES: 'refit_task_templates'
 } as const;
 
 // Utility Types
@@ -387,3 +390,181 @@ export type EntityType = 'location' | 'project' | 'contractor' | 'quote' | 'docu
 export type ProjectStatus = Project['status'];
 export type Priority = Project['priority'];
 export type ContractorStatus = Contractor['status'];
+// ==================== APPOINTMENTS & TASKS SYSTEM ====================
+
+export type AppointmentType =
+  | 'meeting'
+  | 'site_visit'
+  | 'client_call'
+  | 'inspection'
+  | 'deadline'
+  | 'milestone'
+  | 'contractor_meeting'
+  | 'internal_review'
+  | 'other';
+
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
+
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface Participant {
+  type: 'internal' | 'external';
+  userId?: string; // Se interno, riferimento a User
+  name: string;
+  email: string;
+  role?: string;
+  required: boolean;
+  confirmed?: boolean;
+}
+
+export interface AppointmentLocation {
+  type: 'physical' | 'virtual';
+  address?: string;
+  locationId?: string; // Riferimento a Location se fisica
+  meetingLink?: string;
+  roomNumber?: string;
+  notes?: string;
+}
+
+export interface AppointmentReminder {
+  enabled: boolean;
+  minutesBefore: number; // 15, 30, 60, 1440 (1 giorno), etc.
+  sent?: boolean;
+  sentAt?: string;
+}
+
+export interface AppointmentRecurrence {
+  type: RecurrenceType;
+  interval: number; // ogni X giorni/settimane/mesi
+  endDate?: string;
+  endAfterOccurrences?: number;
+  daysOfWeek?: number[]; // 0-6 (domenica-sabato) per ricorrenza settimanale
+  dayOfMonth?: number; // 1-31 per ricorrenza mensile
+}
+
+export interface Appointment {
+  id: string;
+  projectId?: string; // Collegamento opzionale al progetto
+  phaseId?: string;   // Collegamento opzionale alla fase
+  locationId?: string; // Collegamento opzionale alla location
+
+  title: string;
+  description?: string;
+  type: AppointmentType;
+
+  // Date e orari
+  scheduledDate: string; // YYYY-MM-DD
+  startTime: string;     // HH:MM
+  endTime: string;       // HH:MM
+  allDay?: boolean;
+
+  // Location dell'appuntamento
+  location?: AppointmentLocation;
+
+  // Partecipanti
+  participants: Participant[];
+  organizer: string; // userId dell'organizzatore
+
+  // Status e priorità
+  status: AppointmentStatus;
+  priority: 'low' | 'medium' | 'high';
+
+  // Reminder
+  reminder?: AppointmentReminder;
+
+  // Ricorrenza
+  recurrence?: AppointmentRecurrence;
+  parentAppointmentId?: string; // Se è ricorrente, riferimento al parent
+
+  // Documenti e note
+  documents?: string[]; // Array di document IDs
+  notes?: string;
+  agenda?: string;
+  outcomes?: string; // Note post-meeting
+
+  // Metadata
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
+}
+
+// Task avanzati (estende il Task base esistente)
+export type TaskType = 'task' | 'milestone' | 'review' | 'approval' | 'checkpoint';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface TaskEnhanced extends Task {
+  // Campi aggiuntivi rispetto al Task base
+  type: TaskType;
+  priority: TaskPriority;
+
+  // Date avanzate
+  dueDate?: string;
+  reminderDate?: string;
+  completedAt?: string;
+
+  // Effort tracking
+  estimatedHours: number;
+  actualHours?: number;
+  remainingHours?: number;
+  progressPercentage: number; // 0-100
+
+  // Dipendenze e relazioni
+  dependencies?: string[]; // IDs di altri task che devono essere completati prima
+  blockedBy?: string[];    // IDs di task che bloccano questo
+  blocks?: string[];       // IDs di task bloccati da questo
+  relatedTasks?: string[]; // Altri task correlati
+
+  // Categorizzazione
+  tags?: string[];
+  labels?: string[];
+
+  // Reminder e notifiche
+  reminder?: {
+    enabled: boolean;
+    daysBefore: number;
+    sent?: boolean;
+  };
+
+  // Checklist sotto-task
+  checklist?: TaskChecklistItem[];
+
+  // Collegamenti
+  appointmentId?: string; // Collegamento a un appuntamento
+  contractorId?: string;  // Contractor responsabile
+
+  // Attachments
+  attachments?: string[]; // Document IDs
+
+  // Approvazione (per task tipo 'approval')
+  approvalRequired?: boolean;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+}
+
+export interface TaskChecklistItem {
+  id: string;
+  description: string;
+  completed: boolean;
+  completedBy?: string;
+  completedAt?: string;
+}
+
+// Template per task ricorrenti
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: TaskType;
+  priority: TaskPriority;
+  estimatedHours: number;
+  checklist?: Omit<TaskChecklistItem, 'id' | 'completed' | 'completedBy' | 'completedAt'>[];
+  tags?: string[];
+  category: 'standard' | 'custom';
+  projectType?: Project['type']; // Tipo di progetto per cui è adatto
+  phaseType?: string; // Tipo di fase
+  createdAt: string;
+}

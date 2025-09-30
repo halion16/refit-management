@@ -8,6 +8,7 @@ import { Projects } from '@/components/Projects';
 import { Contractors } from '@/components/Contractors';
 import Quotes from '@/components/Quotes';
 import { Calendar } from '@/components/Calendar';
+import { AppointmentList } from '@/components/AppointmentList';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -48,6 +49,8 @@ export default function Home() {
         return <Quotes />;
       case 'calendar':
         return <Calendar />;
+      case 'appointments':
+        return <AppointmentList />;
       case 'settings':
         return (
           <div>

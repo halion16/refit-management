@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { UpcomingAppointmentsWidget } from './UpcomingAppointmentsWidget';
 import { Button } from '@/components/ui/Button';
 import SampleDataBanner from '@/components/SampleDataBanner';
 import { useProjects } from '@/hooks/useProjects';
@@ -299,6 +300,7 @@ export function Dashboard() {
         </div>
 
         <RecentActivityCard />
+        <UpcomingAppointmentsWidget />
         <UpcomingTasksCard />
       </div>
 

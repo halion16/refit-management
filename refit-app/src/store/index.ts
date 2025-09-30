@@ -9,7 +9,7 @@ import type { Location, Project, Contractor, Quote, User } from '@/types';
 interface AppState {
   // UI State
   sidebarOpen: boolean;
-  currentView: 'dashboard' | 'locations' | 'projects' | 'contractors' | 'quotes' | 'calendar' | 'reports' | 'documents' | 'photos' | 'settings';
+  currentView: 'dashboard' | 'locations' | 'projects' | 'contractors' | 'quotes' | 'calendar' | 'appointments' | 'tasks' | 'reports' | 'documents' | 'photos' | 'settings';
   darkMode: boolean;
 
   // User State
