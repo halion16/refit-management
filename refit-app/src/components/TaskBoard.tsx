@@ -249,6 +249,8 @@ export function TaskBoard() {
                 tasksByStatus[status].map(task => {
                   const progress = getTaskProgress(task);
                   const overdue = isOverdue(task.dueDate);
+                  const taskProject = projects.find(p => p.id === task.projectId);
+                  const taskPhase = taskProject?.phases.find(ph => ph.id === task.phaseId);
 
                   return (
                     <div
@@ -261,6 +263,24 @@ export function TaskBoard() {
                       }}
                       className={`bg-white rounded-lg border-l-4 ${priorityColors[task.priority]} p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
                     >
+                      {/* Project and Phase Badges */}
+                      <div className="mb-2 space-y-1">
+                        {taskProject && (
+                          <div>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">
+                              📁 {taskProject.name}
+                            </span>
+                          </div>
+                        )}
+                        {taskPhase && (
+                          <div>
+                            <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">
+                              🔨 {taskPhase.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Priority Badge */}
                       <div className="flex items-center justify-between mb-2">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded ${

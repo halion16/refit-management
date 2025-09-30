@@ -18,13 +18,16 @@ import {
   FileText,
   Camera,
   Edit,
-  Plus
+  Plus,
+  ListTodo
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProjectPhases } from '@/components/ProjectPhases';
 import ProjectDocuments from '@/components/ProjectDocuments';
+import { TaskForm } from '@/components/TaskForm';
+import { useTasksEnhanced } from '@/hooks/useTasksEnhanced';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import type { Project, Location } from '@/types';
+import type { Project, Location, TaskEnhanced } from '@/types';
 
 interface ProjectDetailsProps {
   project: Project;
@@ -37,9 +40,86 @@ interface ProjectDetailsProps {
 
 
 export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject, onRequestQuote }: ProjectDetailsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team' | 'documents'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team' | 'documents' | 'tasks'>('overview');
   const [showAddMemberInput, setShowAddMemberInput] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskEnhanced | undefined>();
+
+  const { getTasksByProject, addTask, updateTask, deleteTask } = useTasksEnhanced();
+  const projectTasks = getTasksByProject(project.id, project.phases);
+
+  // Task Card Component - Compact Version
+  const TaskCard = ({ task, onEdit, setShowForm }: { task: TaskEnhanced; onEdit: (task: TaskEnhanced) => void; setShowForm: (show: boolean) => void }) => {
+    const progress = task.checklist?.length
+      ? Math.round((task.checklist.filter(i => i.completed).length / task.checklist.length) * 100)
+      : task.progressPercentage;
+
+    const statusColors: Record<string, string> = {
+      pending: 'bg-gray-100 text-gray-700',
+      in_progress: 'bg-blue-100 text-blue-700',
+      under_review: 'bg-purple-100 text-purple-700',
+      completed: 'bg-green-100 text-green-700',
+      on_hold: 'bg-yellow-100 text-yellow-700',
+      blocked: 'bg-red-100 text-red-700',
+    };
+
+    const statusLabels: Record<string, string> = {
+      pending: 'Da Fare',
+      in_progress: 'In Corso',
+      under_review: 'In Revisione',
+      completed: 'Completato',
+      on_hold: 'In Attesa',
+      blocked: 'Bloccato',
+    };
+
+    return (
+      <div
+        onClick={() => {
+          onEdit(task);
+          setShowForm(true);
+        }}
+        className="p-2 bg-white border border-gray-200 rounded hover:shadow-md transition-shadow cursor-pointer"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="font-medium text-sm text-gray-900 truncate">{task.title}</h4>
+              <span className={`text-xs font-medium px-1.5 py-0.5 rounded whitespace-nowrap ${statusColors[task.status] || 'bg-gray-100 text-gray-700'}`}>
+                {statusLabels[task.status] || task.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-gray-600 whitespace-nowrap">
+            {task.dueDate && (
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {formatDate(task.dueDate)}
+              </span>
+            )}
+            {task.estimatedHours && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {task.estimatedHours}h
+              </span>
+            )}
+            {task.checklist && task.checklist.length > 0 && (
+              <span className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                {task.checklist.filter(i => i.completed).length}/{task.checklist.length}
+              </span>
+            )}
+            {progress > 0 && (
+              <span className="flex items-center gap-1 font-medium">
+                {progress}%
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const addTeamMember = () => {
     if (newMemberName.trim() && !project.team.includes(newMemberName.trim())) {
@@ -121,6 +201,7 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
   const tabs = [
     { id: 'overview', label: 'Panoramica', icon: <Target className="h-4 w-4" /> },
     { id: 'phases', label: 'Fasi', icon: <CheckCircle className="h-4 w-4" /> },
+    { id: 'tasks', label: `Task (${projectTasks.length})`, icon: <ListTodo className="h-4 w-4" /> },
     { id: 'budget', label: 'Budget', icon: <Euro className="h-4 w-4" /> },
     { id: 'timeline', label: 'Timeline', icon: <Calendar className="h-4 w-4" /> },
     { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> },
@@ -570,8 +651,137 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
               />
             </div>
           )}
+
+          {/* Tasks Tab */}
+          {activeTab === 'tasks' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Task del Progetto
+                </h3>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setEditingTask(undefined);
+                    setShowTaskForm(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuovo Task
+                </Button>
+              </div>
+
+              {projectTasks.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <ListTodo className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nessun task per questo progetto
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Inizia creando il primo task per questo progetto
+                  </p>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setEditingTask(undefined);
+                      setShowTaskForm(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crea Task
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+                  {/* Task senza fase */}
+                  {(() => {
+                    const tasksWithoutPhase = projectTasks.filter(t => !t.phaseId);
+                    if (tasksWithoutPhase.length === 0) return null;
+
+                    return (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 sticky top-0 bg-white py-1">
+                          <ListTodo className="h-4 w-4" />
+                          Task Generali ({tasksWithoutPhase.length})
+                        </h4>
+                        <div className="space-y-1">
+                          {tasksWithoutPhase.map(task => (
+                            <TaskCard key={task.id} task={task} onEdit={setEditingTask} setShowForm={setShowTaskForm} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Task raggruppati per fase */}
+                  {project.phases.map(phase => {
+                    const phaseTasks = projectTasks.filter(t => t.phaseId === phase.id);
+                    if (phaseTasks.length === 0) return null;
+
+                    const completedTasks = phaseTasks.filter(t => t.status === 'completed').length;
+                    const phaseProgress = Math.round((completedTasks / phaseTasks.length) * 100);
+
+                    return (
+                      <div key={phase.id} className="border border-gray-200 rounded-lg p-3">
+                        <div className="mb-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                              🔨 {phase.name}
+                              <span className="text-xs font-normal text-gray-600">
+                                ({phaseTasks.length} task)
+                              </span>
+                            </h4>
+                            <span className="text-xs font-medium text-gray-700">
+                              {completedTasks}/{phaseTasks.length} completati
+                            </span>
+                          </div>
+
+                          {/* Progress Bar Fase */}
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full transition-all ${
+                                phaseProgress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                              }`}
+                              style={{ width: `${phaseProgress}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          {phaseTasks.map(task => (
+                            <TaskCard key={task.id} task={task} onEdit={setEditingTask} setShowForm={setShowTaskForm} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Task Form Modal */}
+      {showTaskForm && (
+        <TaskForm
+          task={editingTask}
+          projectId={project.id}
+          onSave={async (taskData) => {
+            if (editingTask) {
+              await updateTask(editingTask.id, taskData);
+            } else {
+              await addTask(taskData);
+            }
+            setShowTaskForm(false);
+            setEditingTask(undefined);
+          }}
+          onCancel={() => {
+            setShowTaskForm(false);
+            setEditingTask(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }
