@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, GripVertical, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, Filter, GripVertical, Clock, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { TaskEnhanced, TaskStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { TaskForm } from './TaskForm';
+import { SmartTaskAssignment } from './Team/SmartTaskAssignment';
 import { useTasksEnhanced } from '@/hooks/useTasksEnhanced';
 import { useProjects } from '@/hooks/useProjects';
 
@@ -46,6 +47,8 @@ export function TaskBoard() {
   const [draggedTask, setDraggedTask] = useState<TaskEnhanced | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskEnhanced | undefined>();
+  const [showSmartAssignment, setShowSmartAssignment] = useState(false);
+  const [taskForAssignment, setTaskForAssignment] = useState<TaskEnhanced | null>(null);
 
   // Filter tasks
   const filteredTasks = useMemo(() => {
@@ -351,6 +354,23 @@ export function TaskBoard() {
                         )}
                       </div>
 
+                      {/* Smart Assignment Button */}
+                      {(!task.assignedTo || task.assignedTo.length === 0) && (
+                        <div className="mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTaskForAssignment(task);
+                              setShowSmartAssignment(true);
+                            }}
+                            className="text-xs text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                            Smart Assignment
+                          </button>
+                        </div>
+                      )}
+
                       {/* Tags */}
                       {task.tags && task.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -383,6 +403,29 @@ export function TaskBoard() {
           onCancel={() => {
             setShowForm(false);
             setEditingTask(undefined);
+          }}
+        />
+      )}
+
+      {/* Smart Assignment Modal */}
+      {showSmartAssignment && taskForAssignment && (
+        <SmartTaskAssignment
+          taskTitle={taskForAssignment.title}
+          taskDescription={taskForAssignment.description}
+          requiredSkills={taskForAssignment.tags || []}
+          estimatedHours={taskForAssignment.estimatedHours || 0}
+          priority={taskForAssignment.priority}
+          onAssign={async (memberId) => {
+            // Update task with assigned member
+            await updateTask(taskForAssignment.id, {
+              assignedTo: [memberId],
+            });
+            setShowSmartAssignment(false);
+            setTaskForAssignment(null);
+          }}
+          onCancel={() => {
+            setShowSmartAssignment(false);
+            setTaskForAssignment(null);
           }}
         />
       )}

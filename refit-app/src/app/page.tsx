@@ -14,12 +14,16 @@ import { TeamDirectory } from '@/components/Team/TeamDirectory';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
+import { useAutomaticNotifications } from '@/hooks/useAutomaticNotifications';
 
 export default function Home() {
   const hydrated = useHydration();
   const currentView = useCurrentView();
   const currentUser = useCurrentUser();
   const login = useLogin();
+
+  // Initialize automatic notifications
+  useAutomaticNotifications();
 
   // Auto-login con utente da dati di esempio
   useEffect(() => {

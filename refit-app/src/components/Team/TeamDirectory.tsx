@@ -5,8 +5,9 @@ import { useTeam } from '@/hooks/useTeam';
 import { TeamMember, TeamMemberRole, TeamMemberStatus } from '@/types';
 import { TeamMemberCard } from './TeamMemberCard';
 import { TeamMemberForm } from './TeamMemberForm';
+import { WorkloadDashboard } from './WorkloadDashboard';
 import { Button } from '@/components/ui/Button';
-import { Plus, Search, Filter, Users, TrendingUp, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, Users, TrendingUp, AlertCircle, BarChart3 } from 'lucide-react';
 
 export function TeamDirectory() {
   const {
@@ -20,6 +21,7 @@ export function TeamDirectory() {
     getActiveMembers,
   } = useTeam();
 
+  const [activeTab, setActiveTab] = useState<'directory' | 'workload'>('directory');
   const [showForm, setShowForm] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +77,9 @@ export function TeamDirectory() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Team</h1>
           <p className="text-gray-600 mt-1">
-            {filteredMembers.length} membri{filteredMembers.length !== members.length && ` (${members.length} totali)`}
+            {activeTab === 'directory'
+              ? `${filteredMembers.length} membri${filteredMembers.length !== members.length ? ` (${members.length} totali)` : ''}`
+              : 'Panoramica carico di lavoro'}
           </p>
         </div>
         <Button
@@ -89,6 +93,40 @@ export function TeamDirectory() {
           Nuovo Membro
         </Button>
       </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setActiveTab('directory')}
+            className={`px-4 py-2 border-b-2 font-medium transition-colors ${
+              activeTab === 'directory'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Users className="h-5 w-5 inline mr-2" />
+            Directory
+          </button>
+          <button
+            onClick={() => setActiveTab('workload')}
+            className={`px-4 py-2 border-b-2 font-medium transition-colors ${
+              activeTab === 'workload'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <BarChart3 className="h-5 w-5 inline mr-2" />
+            Workload
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      {activeTab === 'workload' ? (
+        <WorkloadDashboard />
+      ) : (
+        <div className="space-y-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -227,6 +265,8 @@ export function TeamDirectory() {
               onClick={() => handleEdit(member)}
             />
           ))}
+        </div>
+      )}
         </div>
       )}
 

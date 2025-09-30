@@ -12,6 +12,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { UpcomingAppointmentsWidget } from './UpcomingAppointmentsWidget';
+import { TeamWorkloadWidget } from './Team/TeamWorkloadWidget';
 import { Button } from '@/components/ui/Button';
 import SampleDataBanner from '@/components/SampleDataBanner';
 import { useProjects } from '@/hooks/useProjects';
@@ -264,6 +265,12 @@ export function Dashboard() {
         />
       </div>
 
+      {/* Widgets Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TeamWorkloadWidget onViewDetails={() => setCurrentView('team')} />
+        <UpcomingAppointmentsWidget />
+      </div>
+
       {/* Budget Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -300,7 +307,6 @@ export function Dashboard() {
         </div>
 
         <RecentActivityCard />
-        <UpcomingAppointmentsWidget />
         <UpcomingTasksCard />
       </div>
 
