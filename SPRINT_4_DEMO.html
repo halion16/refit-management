@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint 4 Demo - Notification Features</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        @keyframes ping {
+            75%, 100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .animate-ping {
+            animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .toast-exit {
+            animation: slideOut 0.3s ease-in;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">🎉 Sprint 4 Demo - Notification System</h1>
+        <p class="text-gray-600 mb-8">Testa tutte le nuove features implementate nello Sprint 4</p>
+
+        <!-- Demo Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+            <!-- 1. Badge Animation Demo -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    🔔 Badge Animations
+                </h2>
+                <p class="text-gray-600 mb-4">Animazioni pulse + ping sul badge notifiche</p>
+
+                <div class="bg-gray-50 rounded-lg p-8 flex items-center justify-center">
+                    <div class="relative">
+                        <button class="relative bg-white hover:bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+                            <svg class="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span id="badge" class="absolute -top-1 -right-1 h-6 w-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+                                <span class="text-xs text-white font-semibold z-10">3</span>
+                                <span class="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75 animate-ping"></span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 space-y-2">
+                    <button onclick="updateBadge(1)" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Incrementa Badge
+                    </button>
+                    <button onclick="updateBadge(-1)" class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        Decrementa Badge
+                    </button>
+                    <button onclick="resetBadge()" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        Reset Badge
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Toast Notifications Demo -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    🍞 Toast Notifications
+                </h2>
+                <p class="text-gray-600 mb-4">Notifiche popup con auto-dismiss</p>
+
+                <div class="space-y-2">
+                    <button onclick="showToast('normal')" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center justify-center gap-2">
+                        <span>📋</span> Notifica Normale (5s)
+                    </button>
+                    <button onclick="showToast('high')" class="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 flex items-center justify-center gap-2">
+                        <span>⏰</span> Alta Priorità (6s)
+                    </button>
+                    <button onclick="showToast('urgent')" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 flex items-center justify-center gap-2">
+                        <span>⚠️</span> Urgente (8s)
+                    </button>
+                    <button onclick="showToast('success')" class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 flex items-center justify-center gap-2">
+                        <span>✅</span> Successo (4s)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Sound Notifications Demo -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    🔊 Sound Notifications
+                </h2>
+                <p class="text-gray-600 mb-4">Feedback audio per notifiche</p>
+
+                <div class="mb-4">
+                    <label class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="soundEnabled" checked class="w-4 h-4">
+                        <span class="text-sm font-medium">Abilita Suoni</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <span class="text-sm font-medium">Volume:</span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="50" class="flex-1">
+                        <span id="volumeValue" class="text-sm font-medium">50%</span>
+                    </label>
+                </div>
+
+                <div class="space-y-2">
+                    <button onclick="playSound('normal')" class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        🔔 Suono Normale
+                    </button>
+                    <button onclick="playSound('urgent')" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+                        🚨 Suono Urgente
+                    </button>
+                    <button onclick="playSound('success')" class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                        ✨ Suono Successo
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. Notification Grouping Demo -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    📊 Notification Grouping
+                </h2>
+                <p class="text-gray-600 mb-4">Raggruppa notifiche simili</p>
+
+                <div class="mb-4">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="groupingEnabled" checked class="w-4 h-4">
+                        <span class="text-sm font-medium">Abilita Raggruppamento</span>
+                    </label>
+                </div>
+
+                <div id="notificationList" class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <!-- Notifications will be rendered here -->
+                </div>
+
+                <div class="mt-4 space-y-2">
+                    <button onclick="addNotification('task_overdue')" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm">
+                        + Task Scaduto
+                    </button>
+                    <button onclick="addNotification('deadline_approaching')" class="w-full bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm">
+                        + Scadenza in Arrivo
+                    </button>
+                    <button onclick="clearNotifications()" class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm">
+                        Pulisci Tutte
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Container -->
+        <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+        <!-- Live App Link -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <h2 class="text-2xl font-bold mb-2">🚀 Prova nell'App Reale</h2>
+            <p class="mb-4">Apri l'applicazione per vedere tutte le features in azione!</p>
+            <a href="http://localhost:3000" target="_blank" class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                Apri BDS Project Manager →
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let currentBadgeCount = 3;
+        let notificationId = 1;
+        let notifications = [];
+
+        // Sounds (simple beeps using Web Audio API)
+        function playBeep(frequency, duration) {
+            const soundEnabled = document.getElementById('soundEnabled').checked;
+            if (!soundEnabled) return;
+
+            const volume = document.getElementById('volumeSlider').value / 100;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(volume * 0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // Sound functions
+        function playSound(type) {
+            switch(type) {
+                case 'normal':
+                    playBeep(800, 0.15);
+                    break;
+                case 'urgent':
+                    playBeep(1200, 0.1);
+                    setTimeout(() => playBeep(1200, 0.1), 150);
+                    break;
+                case 'success':
+                    playBeep(600, 0.2);
+                    break;
+            }
+        }
+
+        // Volume slider
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            document.getElementById('volumeValue').textContent = e.target.value + '%';
+        });
+
+        // Badge functions
+        function updateBadge(delta) {
+            currentBadgeCount = Math.max(0, currentBadgeCount + delta);
+            const badge = document.getElementById('badge');
+            if (currentBadgeCount === 0) {
+                badge.style.display = 'none';
+            } else {
+                badge.style.display = 'flex';
+                badge.querySelector('.z-10').textContent = currentBadgeCount > 9 ? '9+' : currentBadgeCount;
+            }
+        }
+
+        function resetBadge() {
+            currentBadgeCount = 0;
+            updateBadge(0);
+        }
+
+        // Toast functions
+        function showToast(priority) {
+            const container = document.getElementById('toastContainer');
+
+            const toastData = {
+                normal: {
+                    icon: '📋',
+                    title: 'Task Assegnato',
+                    message: 'Ti è stato assegnato un nuovo task',
+                    color: 'blue',
+                    duration: 5000
+                },
+                high: {
+                    icon: '⏰',
+                    title: 'Scadenza in Arrivo',
+                    message: 'Un task scade tra 2 giorni',
+                    color: 'orange',
+                    duration: 6000
+                },
+                urgent: {
+                    icon: '⚠️',
+                    title: 'Task Scaduto!',
+                    message: 'Un task urgente è scaduto',
+                    color: 'red',
+                    duration: 8000
+                },
+                success: {
+                    icon: '✅',
+                    title: 'Task Completato',
+                    message: 'Hai completato un task con successo',
+                    color: 'green',
+                    duration: 4000
+                }
+            };
+
+            const data = toastData[priority];
+
+            const toast = document.createElement('div');
+            toast.className = `toast-enter bg-white rounded-lg shadow-xl border-l-4 border-${data.color}-500 p-4 max-w-md`;
+            toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">${data.icon}</span>
+                    <div class="flex-1">
+                        <div class="font-semibold text-sm text-gray-900">${data.title}</div>
+                        <div class="text-xs text-gray-600 mt-1">${data.message}</div>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Play sound
+            if (priority === 'urgent') {
+                playSound('urgent');
+            } else if (priority === 'success') {
+                playSound('success');
+            } else {
+                playSound('normal');
+            }
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, data.duration);
+        }
+
+        // Notification functions
+        function addNotification(type) {
+            const typeData = {
+                task_overdue: {
+                    icon: '⚠️',
+                    title: 'Task scaduto',
+                    message: `Il task "Implementare feature #${notificationId}" è scaduto`,
+                    color: 'red'
+                },
+                deadline_approaching: {
+                    icon: '⏰',
+                    title: 'Scadenza in arrivo',
+                    message: `Il task "Review codice #${notificationId}" scade tra 2 giorni`,
+                    color: 'orange'
+                }
+            };
+
+            const data = typeData[type];
+            notifications.push({
+                id: notificationId++,
+                type,
+                ...data,
+                read: false,
+                timestamp: new Date()
+            });
+
+            renderNotifications();
+            updateBadge(1);
+        }
+
+        function renderNotifications() {
+            const container = document.getElementById('notificationList');
+            const groupingEnabled = document.getElementById('groupingEnabled').checked;
+
+            if (notifications.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-8">Nessuna notifica</div>';
+                return;
+            }
+
+            if (groupingEnabled) {
+                // Group by type
+                const groups = {};
+                notifications.forEach(n => {
+                    if (!groups[n.type]) {
+                        groups[n.type] = [];
+                    }
+                    groups[n.type].push(n);
+                });
+
+                container.innerHTML = Object.entries(groups).map(([type, items]) => {
+                    if (items.length === 1) {
+                        return renderNotification(items[0]);
+                    }
+
+                    return `
+                        <div class="bg-blue-50 rounded-lg p-3 mb-2 border-l-4 border-blue-500">
+                            <div class="font-semibold text-sm flex items-center gap-2">
+                                <span>${items[0].icon}</span>
+                                <span>${items.length} ${items[0].title}</span>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">${items[0].message} (+${items.length - 1} altre)</div>
+                            <button onclick="expandGroup('${type}')" class="text-xs text-blue-600 mt-2 hover:text-blue-800">
+                                Mostra tutte (${items.length}) ↓
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                container.innerHTML = notifications.map(n => renderNotification(n)).join('');
+            }
+        }
+
+        function renderNotification(notification) {
+            return `
+                <div class="bg-white rounded-lg p-3 mb-2 border-l-4 border-${notification.color}-500">
+                    <div class="font-semibold text-sm flex items-center gap-2">
+                        <span>${notification.icon}</span>
+                        <span>${notification.title}</span>
+                    </div>
+                    <div class="text-xs text-gray-600 mt-1">${notification.message}</div>
+                </div>
+            `;
+        }
+
+        function clearNotifications() {
+            notifications = [];
+            renderNotifications();
+            resetBadge();
+        }
+
+        document.getElementById('groupingEnabled').addEventListener('change', renderNotifications);
+
+        // Initial render
+        renderNotifications();
+    </script>
+</body>
+</html>
