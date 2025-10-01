@@ -754,3 +754,52 @@ export interface ActivityFeedFilters {
 }
 
 export const ACTIVITY_STORAGE_KEY = 'refit_activities' as const;
+
+// ==========================================
+// COMMENTS SYSTEM TYPES
+// ==========================================
+
+export type CommentEntityType = 'task' | 'project' | 'document' | 'general';
+
+export interface Reaction {
+  emoji: string;
+  userId: string;
+  userName: string;
+  timestamp: string;
+}
+
+export interface CommentAttachment {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  size: number;
+}
+
+export interface Comment {
+  id: string;
+  parentId?: string; // For threaded replies
+  entityType: CommentEntityType;
+  entityId?: string; // ID of task/project/document
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  mentions?: string[]; // Array of user IDs mentioned with @
+  attachments?: CommentAttachment[];
+  reactions?: Reaction[];
+  createdAt: string;
+  updatedAt?: string;
+  editedBy?: string;
+  deleted?: boolean;
+}
+
+export interface CommentFilters {
+  entityType?: CommentEntityType;
+  entityId?: string;
+  userId?: string;
+  parentId?: string | null; // null for top-level only
+  deleted?: boolean;
+}
+
+export const COMMENTS_STORAGE_KEY = 'refit_comments' as const;

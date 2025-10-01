@@ -5,6 +5,8 @@ import { X, Plus, Trash2 } from 'lucide-react';
 import { TaskEnhanced, TaskType, TaskPriority, TaskStatus } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { useProjects } from '@/hooks/useProjects';
+import { CommentSection } from '@/components/Comments';
+import { useCurrentUser } from '@/store';
 
 interface TaskFormProps {
   task?: TaskEnhanced;
@@ -48,6 +50,7 @@ const statuses: { value: TaskStatus; label: string }[] = [
 export function TaskForm({ task, projectId: initialProjectId, onSave, onCancel }: TaskFormProps) {
   const { data: projects = [] } = useProjects();
   const projectsList = Array.isArray(projects) ? projects : [];
+  const currentUser = useCurrentUser();
 
   const [formData, setFormData] = useState({
     title: task?.title || '',
@@ -421,6 +424,20 @@ export function TaskForm({ task, projectId: initialProjectId, onSave, onCancel }
                 ))}
               </div>
             </div>
+
+            {/* Comments Section - Only show for existing tasks */}
+            {task && currentUser && (
+              <div className="pt-4">
+                <CommentSection
+                  entityType="task"
+                  entityId={task.id}
+                  currentUserId={currentUser.id}
+                  currentUserName={currentUser.name}
+                  currentUserAvatar={currentUser.avatar}
+                  title="Commenti Task"
+                />
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3 pt-4 border-t border-gray-200">

@@ -27,13 +27,16 @@ import {
   Flag,
   UserCheck,
   Bell,
-  TrendingDown
+  TrendingDown,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProjectPhases } from '@/components/ProjectPhases';
 import ProjectDocuments from '@/components/ProjectDocuments';
 import { TaskForm } from '@/components/TaskForm';
+import { CommentSection } from '@/components/Comments';
 import { useTasksEnhanced } from '@/hooks/useTasksEnhanced';
+import { useCurrentUser } from '@/store';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import type { Project, Location, TaskEnhanced } from '@/types';
 
@@ -48,7 +51,8 @@ interface ProjectDetailsProps {
 
 
 export function ProjectDetails({ project, location, onClose, onEdit, onUpdateProject, onRequestQuote }: ProjectDetailsProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team' | 'documents' | 'tasks'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'phases' | 'budget' | 'timeline' | 'team' | 'documents' | 'tasks' | 'comments'>('overview');
+  const currentUser = useCurrentUser();
   const [showAddMemberInput, setShowAddMemberInput] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -214,7 +218,8 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
     { id: 'budget', label: 'Budget', icon: <Euro className="h-4 w-4" /> },
     { id: 'timeline', label: 'Timeline', icon: <Calendar className="h-4 w-4" /> },
     { id: 'team', label: 'Team', icon: <Users className="h-4 w-4" /> },
-    { id: 'documents', label: 'Documenti', icon: <FileText className="h-4 w-4" /> }
+    { id: 'documents', label: 'Documenti', icon: <FileText className="h-4 w-4" /> },
+    { id: 'comments', label: 'Commenti', icon: <MessageSquare className="h-4 w-4" /> }
   ];
 
   return (
@@ -1355,6 +1360,20 @@ export function ProjectDetails({ project, location, onClose, onEdit, onUpdatePro
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Comments Tab */}
+          {activeTab === 'comments' && currentUser && (
+            <div className="p-6">
+              <CommentSection
+                entityType="project"
+                entityId={project.id}
+                currentUserId={currentUser.id}
+                currentUserName={currentUser.name}
+                currentUserAvatar={currentUser.avatar}
+                title="Commenti Progetto"
+              />
             </div>
           )}
         </div>
