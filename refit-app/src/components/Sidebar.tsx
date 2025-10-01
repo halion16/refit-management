@@ -127,9 +127,9 @@ export function Sidebar() {
       label: 'Activity Feed',
     },
     {
-      view: 'reports',
+      view: 'analytics',
       icon: <BarChart3 className="h-5 w-5" />,
-      label: 'Report',
+      label: 'Analytics',
     },
     {
       view: 'documents',

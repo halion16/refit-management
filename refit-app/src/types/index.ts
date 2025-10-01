@@ -803,3 +803,136 @@ export interface CommentFilters {
 }
 
 export const COMMENTS_STORAGE_KEY = 'refit_comments' as const;
+
+// ============================================
+// ANALYTICS & REPORTING TYPES
+// ============================================
+
+export type DateRangePreset = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
+
+export interface DateRangeFilter {
+  startDate: string;
+  endDate: string;
+  preset?: DateRangePreset;
+}
+
+export interface TeamMetrics {
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  pendingTasks: number;
+  overdueTasks: number;
+  onTimeRate: number; // percentage
+  averageUtilization: number; // percentage
+  activeMembers: number;
+  totalMembers: number;
+  totalHoursLogged: number;
+  totalHoursEstimated: number;
+}
+
+export interface MemberMetrics {
+  memberId: string;
+  memberName: string;
+  tasksAssigned: number;
+  tasksCompleted: number;
+  tasksOnTime: number;
+  onTimeRate: number;
+  utilization: number;
+  hoursLogged: number;
+  productivity: number; // tasks completed per day
+}
+
+export interface ProjectMetrics {
+  id: string;
+  name: string;
+  progress: number; // percentage
+  budgetSpent: number;
+  budgetApproved: number;
+  budgetRemaining: number;
+  budgetUtilization: number; // percentage
+  daysElapsed: number;
+  daysRemaining: number;
+  daysTotal: number;
+  scheduleProgress: number; // percentage
+  tasksCompleted: number;
+  tasksTotal: number;
+  onSchedule: boolean;
+  phases: PhaseMetrics[];
+}
+
+export interface PhaseMetrics {
+  id: string;
+  name: string;
+  progress: number;
+  tasksCompleted: number;
+  tasksTotal: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'delayed';
+}
+
+export interface BudgetMetrics {
+  totalApproved: number;
+  totalSpent: number;
+  totalRemaining: number;
+  utilizationRate: number; // percentage
+  byProject: {
+    projectId: string;
+    projectName: string;
+    approved: number;
+    spent: number;
+    remaining: number;
+  }[];
+  byCategory: {
+    category: string;
+    amount: number;
+    percentage: number;
+  }[];
+}
+
+export interface ProductivityMetrics {
+  tasksCompletedPerDay: number;
+  averageTaskDuration: number; // hours
+  averageResponseTime: number; // hours
+  peakProductivityHours: string[]; // hours of day
+  topPerformers: MemberMetrics[];
+}
+
+export type ReportType = 'team' | 'project' | 'financial' | 'productivity' | 'custom';
+export type ExportFormat = 'pdf' | 'excel' | 'csv';
+
+export interface AnalyticsReport {
+  id: string;
+  type: ReportType;
+  title: string;
+  description?: string;
+  dateRange: DateRangeFilter;
+  metrics: Record<string, any>;
+  charts?: string[]; // chart IDs to include
+  generatedAt: string;
+  generatedBy: string;
+  format?: ExportFormat;
+}
+
+export interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    color?: string;
+    backgroundColor?: string;
+    borderColor?: string;
+  }[];
+}
+
+export interface KPIMetric {
+  id: string;
+  label: string;
+  value: number | string;
+  unit?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: number; // percentage change
+  comparison?: string; // "vs last period"
+  icon?: string;
+  color?: string;
+}
+
+export const ANALYTICS_STORAGE_KEY = 'refit_analytics_cache' as const;

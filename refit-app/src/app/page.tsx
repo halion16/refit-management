@@ -12,6 +12,7 @@ import { AppointmentList } from '@/components/AppointmentList';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TeamDirectory } from '@/components/Team/TeamDirectory';
 import { ActivityFeed } from '@/components/Activity/ActivityFeed';
+import { AnalyticsDashboard } from '@/components/Analytics';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -74,6 +75,8 @@ export default function Home() {
         return <TaskBoard />;
       case 'activity':
         return <ActivityFeed />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
       case 'settings':
         return (
           <div>
