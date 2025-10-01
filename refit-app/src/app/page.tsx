@@ -15,6 +15,8 @@ import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
 import { useAutomaticNotifications } from '@/hooks/useAutomaticNotifications';
+import { useNotificationToasts } from '@/hooks/useNotificationToasts';
+import { initAudioPlayer } from '@/lib/notificationSounds';
 
 export default function Home() {
   const hydrated = useHydration();
@@ -24,6 +26,14 @@ export default function Home() {
 
   // Initialize automatic notifications
   useAutomaticNotifications();
+
+  // Initialize toast notifications
+  useNotificationToasts();
+
+  // Initialize audio player
+  useEffect(() => {
+    initAudioPlayer();
+  }, []);
 
   // Auto-login con utente da dati di esempio
   useEffect(() => {

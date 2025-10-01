@@ -156,12 +156,12 @@ export function useAutomaticNotifications() {
       checkUnassignedTasks();
     }, 5000);
 
-    // Then check every 1 hour
+    // Then check every 30 seconds for real-time updates
     const interval = setInterval(() => {
       checkOverloadedMembers();
       checkApproachingDeadlines();
       checkUnassignedTasks();
-    }, 60 * 60 * 1000); // 1 hour
+    }, 30 * 1000); // 30 seconds
 
     return () => {
       clearTimeout(initialTimeout);

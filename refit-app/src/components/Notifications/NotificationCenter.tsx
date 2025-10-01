@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItem } from './NotificationItem';
+import { NotificationGroupItem } from './NotificationGroupItem';
 import { Button } from '@/components/ui/Button';
 import {
   Bell,
@@ -10,8 +11,10 @@ import {
   Trash2,
   Filter,
   X,
+  Layers,
 } from 'lucide-react';
 import { NotificationType, NotificationPriority } from '@/types';
+import { groupNotifications, shouldGroupNotifications } from '@/lib/notificationGrouping';
 
 interface NotificationCenterProps {
   onClose?: () => void;
@@ -33,6 +36,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
   const [filterType, setFilterType] = useState<NotificationType | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<NotificationPriority | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [enableGrouping, setEnableGrouping] = useState(true);
 
   // Apply filters
   const filteredNotifications = notifications.filter(notification => {
@@ -44,6 +48,14 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
     }
     return true;
   });
+
+  // Group notifications if enabled
+  const notificationGroups = useMemo(() => {
+    if (!enableGrouping || !shouldGroupNotifications(filteredNotifications)) {
+      return null;
+    }
+    return groupNotifications(filteredNotifications);
+  }, [filteredNotifications, enableGrouping]);
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
@@ -92,7 +104,7 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
       </div>
 
       {/* Actions Bar */}
-      <div className="p-3 border-b border-gray-200 flex items-center gap-2 flex-shrink-0">
+      <div className="p-3 border-b border-gray-200 flex items-center gap-2 flex-shrink-0 flex-wrap">
         <Button
           variant="ghost"
           size="sm"
@@ -112,6 +124,17 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
         >
           <Filter className="h-4 w-4 mr-1" />
           Filtri
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setEnableGrouping(!enableGrouping)}
+          title={enableGrouping ? 'Disabilita raggruppamento' : 'Abilita raggruppamento'}
+          className={enableGrouping ? 'bg-blue-50 text-blue-600' : ''}
+        >
+          <Layers className="h-4 w-4 mr-1" />
+          Raggruppa
         </Button>
 
         <Button
@@ -185,6 +208,17 @@ export function NotificationCenter({ onClose }: NotificationCenterProps) {
                 ? 'Quando riceverai notifiche, appariranno qui'
                 : 'Prova a modificare i filtri'}
             </p>
+          </div>
+        ) : notificationGroups ? (
+          <div>
+            {notificationGroups.map((group) => (
+              <NotificationGroupItem
+                key={group.id}
+                group={group}
+                onMarkAsRead={markAsRead}
+                onDelete={deleteNotification}
+              />
+            ))}
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
