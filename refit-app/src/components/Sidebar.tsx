@@ -15,7 +15,8 @@ import {
   Euro,
   CalendarCheck,
   Kanban,
-  UsersRound
+  UsersRound,
+  Activity
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAppStore, useCurrentView, useSidebarOpen, useSetCurrentView, useToggleSidebar } from '@/store';
@@ -119,6 +120,11 @@ export function Sidebar() {
       icon: <Kanban className="h-5 w-5" />,
       label: 'Task Board',
       badge: urgentTasksCount
+    },
+    {
+      view: 'activity',
+      icon: <Activity className="h-5 w-5" />,
+      label: 'Activity Feed',
     },
     {
       view: 'reports',

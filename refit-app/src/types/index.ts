@@ -703,3 +703,54 @@ export const NOTIFICATION_STORAGE_KEYS = {
   PREFERENCES: 'refit_notification_preferences',
   LAST_CHECK: 'refit_notifications_last_check',
 } as const;
+
+// ==========================================
+// ACTIVITY FEED TYPES
+// ==========================================
+
+export type ActivityType =
+  | 'task_created'
+  | 'task_completed'
+  | 'task_assigned'
+  | 'task_updated'
+  | 'comment_added'
+  | 'document_uploaded'
+  | 'project_created'
+  | 'project_updated'
+  | 'member_joined'
+  | 'member_left'
+  | 'workload_changed'
+  | 'quote_created'
+  | 'quote_approved';
+
+export type ActivityTargetType = 'task' | 'project' | 'document' | 'member' | 'quote' | 'location';
+
+export type ActivityVisibility = 'public' | 'team' | 'private';
+
+export interface TeamActivity {
+  id: string;
+  type: ActivityType;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  targetType?: ActivityTargetType;
+  targetId?: string;
+  targetName?: string;
+  action: string; // Human readable: "created task", "completed", "uploaded document"
+  description?: string;
+  metadata?: Record<string, any>;
+  timestamp: string;
+  visibility: ActivityVisibility;
+}
+
+export interface ActivityFeedFilters {
+  types?: ActivityType[];
+  users?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  targetType?: ActivityTargetType;
+  searchQuery?: string;
+  visibility?: ActivityVisibility;
+}
+
+export const ACTIVITY_STORAGE_KEY = 'refit_activities' as const;

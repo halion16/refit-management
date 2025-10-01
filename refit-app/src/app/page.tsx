@@ -11,6 +11,7 @@ import { Calendar } from '@/components/Calendar';
 import { AppointmentList } from '@/components/AppointmentList';
 import { TaskBoard } from '@/components/TaskBoard';
 import { TeamDirectory } from '@/components/Team/TeamDirectory';
+import { ActivityFeed } from '@/components/Activity/ActivityFeed';
 import DataInitializer from '@/components/DataInitializer';
 import { useCurrentView, useCurrentUser, useLogin } from '@/store';
 import { useHydration } from '@/hooks/useHydration';
@@ -71,6 +72,8 @@ export default function Home() {
         return <AppointmentList />;
       case 'tasks':
         return <TaskBoard />;
+      case 'activity':
+        return <ActivityFeed />;
       case 'settings':
         return (
           <div>
